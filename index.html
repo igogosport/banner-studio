@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Banner Studio — 電商美編協作系統</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Bangers&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans TC', system-ui, -apple-system, sans-serif;
+    background: #f5f6f8;
+    color: #1a1a1a;
+    min-height: 100vh;
+  }
+  .app { display: grid; grid-template-columns: 380px 1fr 340px; height: 100vh; }
+  .panel { overflow-y: auto; padding: 20px; background: #fff; border-right: 1px solid #e5e7eb; }
+  .panel:last-child { border-right: 0; border-left: 1px solid #e5e7eb; }
+  .preview-area { padding: 24px; background: linear-gradient(135deg, #eef0f4 0%, #dde3ec 100%); display: flex; flex-direction: column; align-items: center; overflow-y: auto; }
+  h1 { font-size: 18px; font-weight: 900; margin-bottom: 4px; }
+  h2 { font-size: 14px; font-weight: 700; margin: 16px 0 8px 0; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 16px; background: #f0f2f5; padding: 4px; border-radius: 10px; }
+  .tab { flex: 1; padding: 10px 8px; text-align: center; cursor: pointer; border-radius: 8px; font-size: 13px; font-weight: 700; transition: all 0.2s; user-select: none; }
+  .tab.active { background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .tab:not(.active):hover { background: rgba(255,255,255,0.5); }
+  label { display: block; font-size: 12px; font-weight: 700; color: #555; margin-bottom: 4px; margin-top: 10px; }
+  input[type="text"], input[type="date"], input[type="number"], textarea, select {
+    width: 100%; padding: 8px 10px; border: 1px solid #d5d8df; border-radius: 8px;
+    font-size: 13px; font-family: inherit; background: #fff;
+  }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+  textarea { resize: vertical; min-height: 60px; }
+  input[type="color"] { width: 100%; height: 36px; padding: 2px; border: 1px solid #d5d8df; border-radius: 8px; cursor: pointer; }
+  input[type="file"] { font-size: 12px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .btn {
+    width: 100%; padding: 12px; border: 0; border-radius: 10px;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff;
+    font-size: 14px; font-weight: 700; cursor: pointer; transition: transform 0.1s;
+    font-family: inherit;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-secondary { background: #f0f2f5; color: #1a1a1a; }
+  .template-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 8px; }
+  .template-card { padding: 12px 8px; border-radius: 8px; cursor: pointer; color: #fff; font-size: 12px; font-weight: 700; text-align: center; border: 2px solid transparent; transition: all 0.15s; }
+  .template-card.active { border-color: #1a1a1a; transform: scale(1.03); }
+  .size-checkbox { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 6px; font-size: 12px; cursor: pointer; transition: background 0.15s; }
+  .size-checkbox:hover { background: #f0f2f5; }
+  .size-checkbox input { width: auto; }
+  .size-group { margin-top: 6px; }
+  .size-group-title { font-size: 11px; color: #777; font-weight: 700; padding: 4px 0; }
+  .preview-card { background: #fff; padding: 16px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); margin-bottom: 16px; }
+  .preview-canvas-wrap { position: relative; max-width: 720px; aspect-ratio: 1200/630; background: #ddd; border-radius: 12px; overflow: hidden; user-select: none; }
+  .draggable {
+    position: absolute; cursor: move; padding: 4px 8px; border: 2px dashed transparent;
+    transition: border-color 0.15s; pointer-events: auto;
+  }
+  .draggable:hover, .draggable.dragging { border-color: rgba(255,255,255,0.6); }
+  .preview-status { font-size: 13px; color: #555; margin-top: 8px; text-align: center; }
+  .toolbar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+  .ratio-pill { background: #1a1a1a; color: #fff; font-size: 11px; padding: 4px 10px; border-radius: 999px; font-weight: 700; }
+  .role-tag { display: inline-block; font-size: 11px; padding: 3px 8px; border-radius: 999px; font-weight: 700; margin-right: 6px; }
+  .role-tag.shop { background: #fef3c7; color: #92400e; }
+  .role-tag.market { background: #dbeafe; color: #1e40af; }
+  .role-tag.design { background: #fce7f3; color: #be185d; }
+  .progress { height: 4px; background: #e5e7eb; border-radius: 2px; overflow: hidden; margin-top: 12px; }
+  .progress-bar { height: 100%; background: linear-gradient(90deg, #4f46e5, #7c3aed); transition: width 0.3s; }
+  .help-text { font-size: 11px; color: #888; margin-top: 4px; }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .stat { background: #f8f9fb; padding: 10px; border-radius: 8px; }
+  .stat-num { font-size: 20px; font-weight: 900; color: #4f46e5; }
+  .stat-label { font-size: 11px; color: #666; }
+  @media (max-width: 1100px) {
+    .app { grid-template-columns: 1fr; height: auto; }
+    .panel { border-right: 0; border-bottom: 1px solid #e5e7eb; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useMemo } = React;
+
+const SIZES = {
+  Facebook: [
+    { key: 'fb_post',    label: '動態貼文',    w: 1200, h: 630 },
+    { key: 'fb_story',   label: '限時動態',    w: 1080, h: 1920 },
+    { key: 'fb_cover',   label: '封面',        w: 820,  h: 312 },
+    { key: 'fb_square',  label: '方形',        w: 1080, h: 1080 },
+  ],
+  Instagram: [
+    { key: 'ig_square',    label: '方形',     w: 1080, h: 1080 },
+    { key: 'ig_portrait',  label: '直式',     w: 1080, h: 1350 },
+    { key: 'ig_story',     label: '限時動態', w: 1080, h: 1920 },
+    { key: 'ig_landscape', label: '橫式',     w: 1080, h: 608 },
+  ],
+  '電商平台': [
+    { key: 'ec_800x600',   label: '800x600',   w: 800,  h: 600 },
+    { key: 'ec_1024x768',  label: '1024x768',  w: 1024, h: 768 },
+    { key: 'ec_banner',    label: '橫幅',      w: 1200, h: 300 },
+    { key: 'ec_square',    label: '方形',      w: 800,  h: 800 },
+    { key: 'ec_full',      label: '全寬',      w: 1920, h: 600 },
+  ],
+  'LINE/其他': [
+    { key: 'line_msg',  label: 'LINE圖文訊息', w: 1040, h: 700 },
+    { key: 'yt_thumb',  label: 'YouTube縮圖',  w: 1280, h: 720 },
+  ],
+};
+
+const TEMPLATES = {
+  t1: { name: '閃電特價', from: '#ff4500', to: '#ff8c00', angle: 135, badge: '⚡ 限時搶購', badgeBg: '#ffeb3b', badgeText: '#1a1a1a' },
+  t2: { name: '典雅黑金', from: '#1a1a1a', to: '#0d1b2a', angle: 135, badge: '★ 精選特價', badgeBg: '#d4af37', badgeText: '#1a1a1a' },
+  t3: { name: '活力藍調', from: '#00bfff', to: '#1e90ff', angle: 135, badge: '🔥 超殺優惠', badgeBg: '#ffffff', badgeText: '#1e90ff' },
+  t4: { name: '清新綠意', from: '#00b894', to: '#00cec9', angle: 135, badge: '🌿 優惠特賣', badgeBg: '#ffffff', badgeText: '#00b894' },
+  t5: { name: '午夜紫霞', from: '#6c5ce7', to: '#341f97', angle: 135, badge: '🌙 獨家優惠', badgeBg: '#fdcb6e', badgeText: '#341f97' },
+};
+
+const FONTS = ['Anton', 'Bebas Neue', 'Bangers', 'Noto Sans TC'];
+
+const DEFAULT_POSITIONS = {
+  badge:   { x: 5,  y: 5  },
+  title:   { x: 5,  y: 22 },
+  price:   { x: 5,  y: 68 },
+  date:    { x: 60, y: 78 },
+  product: { x: 60, y: 4  },
+};
+
+const fileToDataURL = (file) => new Promise((resolve, reject) => {
+  const r = new FileReader();
+  r.onload = () => resolve(r.result);
+  r.onerror = reject;
+  r.readAsDataURL(file);
+});
+
+const loadImage = (src) => new Promise((resolve, reject) => {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => resolve(img);
+  img.onerror = reject;
+  img.src = src;
+});
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function drawImageCover(ctx, img, x, y, w, h) {
+  const ir = img.width / img.height;
+  const tr = w / h;
+  let sx, sy, sw, sh;
+  if (ir > tr) { sh = img.height; sw = sh * tr; sx = (img.width - sw)/2; sy = 0; }
+  else { sw = img.width; sh = sw / tr; sx = 0; sy = (img.height - sh)/2; }
+  ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+}
+
+async function renderToCanvas(canvas, w, h, config, productImg, customBgImg) {
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, w, h);
+
+  // Background
+  if (customBgImg) {
+    drawImageCover(ctx, customBgImg, 0, 0, w, h);
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.fillRect(0, 0, w, h);
+  } else {
+    const t = TEMPLATES[config.template];
+    const a = (t.angle - 90) * Math.PI / 180;
+    const cx = w/2, cy = h/2;
+    const len = Math.max(w, h);
+    const x1 = cx - Math.cos(a) * len/2;
+    const y1 = cy - Math.sin(a) * len/2;
+    const x2 = cx + Math.cos(a) * len/2;
+    const y2 = cy + Math.sin(a) * len/2;
+    const grad = ctx.createLinearGradient(x1, y1, x2, y2);
+    grad.addColorStop(0, t.from);
+    grad.addColorStop(1, t.to);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  // Product image
+  if (productImg) {
+    const pos = config.positions.product;
+    const px = w * pos.x / 100;
+    const py = h * pos.y / 100;
+    const pw = Math.min(w * 0.36, w - px - 16);
+    const ph = pw;
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.35)';
+    ctx.shadowBlur = Math.max(20, w * 0.02);
+    ctx.shadowOffsetY = Math.max(10, w * 0.01);
+    roundRect(ctx, px, py, pw, ph, Math.max(16, w * 0.015));
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    ctx.restore();
+    ctx.save();
+    roundRect(ctx, px, py, pw, ph, Math.max(16, w * 0.015));
+    ctx.clip();
+    drawImageCover(ctx, productImg, px, py, pw, ph);
+    ctx.restore();
+  }
+
+  // Helper: scale font size relative to canvas
+  const sz = (pct) => Math.max(12, h * pct);
+
+  // Badge
+  const badgeText = config.badgeText || (TEMPLATES[config.template] && TEMPLATES[config.template].badge) || '';
+  if (badgeText) {
+    const pos = config.positions.badge;
+    const fs = sz(0.045);
+    ctx.font = `900 ${fs}px "${config.fonts.badge}", "Noto Sans TC", sans-serif`;
+    const padX = fs * 0.6, padY = fs * 0.35;
+    const metrics = ctx.measureText(badgeText);
+    const bw = metrics.width + padX * 2;
+    const bh = fs + padY * 2;
+    const bx = w * pos.x / 100;
+    const by = h * pos.y / 100;
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.25)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetY = 3;
+    roundRect(ctx, bx, by, bw, bh, bh/2);
+    ctx.fillStyle = config.colors.badgeBg;
+    ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = config.colors.badgeText;
+    ctx.textBaseline = 'middle';
+    ctx.fillText(badgeText, bx + padX, by + bh/2);
+  }
+
+  // Title
+  if (config.product.name) {
+    const pos = config.positions.title;
+    const fs = sz(0.075);
+    ctx.font = `900 ${fs}px "${config.fonts.title}", "Noto Sans TC", sans-serif`;
+    ctx.fillStyle = config.colors.title;
+    ctx.textBaseline = 'top';
+    const tx = w * pos.x / 100;
+    const ty = h * pos.y / 100;
+    const maxW = w * 0.55;
+    const lines = wrapText(ctx, config.product.name, maxW);
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.4)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 2;
+    lines.forEach((line, i) => ctx.fillText(line, tx, ty + i * fs * 1.1));
+    ctx.restore();
+  }
+
+  // Price
+  if (config.product.salePrice) {
+    const pos = config.positions.price;
+    const px = w * pos.x / 100;
+    const py = h * pos.y / 100;
+    if (config.product.originalPrice) {
+      const ofs = sz(0.04);
+      ctx.font = `700 ${ofs}px "${config.fonts.price}", "Noto Sans TC", sans-serif`;
+      ctx.fillStyle = config.colors.price;
+      ctx.globalAlpha = 0.7;
+      ctx.textBaseline = 'top';
+      const oText = `原價 $${config.product.originalPrice}`;
+      ctx.fillText(oText, px, py);
+      const om = ctx.measureText(oText);
+      ctx.strokeStyle = config.colors.price;
+      ctx.lineWidth = Math.max(2, ofs * 0.08);
+      ctx.beginPath();
+      ctx.moveTo(px, py + ofs * 0.55);
+      ctx.lineTo(px + om.width, py + ofs * 0.55);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+    const fs = sz(0.13);
+    ctx.font = `900 ${fs}px "${config.fonts.price}", "Noto Sans TC", sans-serif`;
+    ctx.fillStyle = config.colors.price;
+    ctx.textBaseline = 'top';
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.35)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetY = 3;
+    const offsetY = config.product.originalPrice ? sz(0.05) : 0;
+    ctx.fillText(`$${config.product.salePrice}`, px, py + offsetY);
+    ctx.restore();
+  }
+
+  // Date
+  if (config.product.startDate || config.product.endDate) {
+    const pos = config.positions.date;
+    const fs = sz(0.035);
+    ctx.font = `700 ${fs}px "${config.fonts.date}", "Noto Sans TC", sans-serif`;
+    ctx.fillStyle = config.colors.date;
+    ctx.textBaseline = 'top';
+    const dx = w * pos.x / 100;
+    const dy = h * pos.y / 100;
+    let dateStr = '';
+    if (config.product.startDate && config.product.endDate) {
+      dateStr = `📅 ${config.product.startDate} ～ ${config.product.endDate}`;
+    } else if (config.product.startDate) {
+      dateStr = `📅 ${config.product.startDate} 起`;
+    } else {
+      dateStr = `📅 ～ ${config.product.endDate}`;
+    }
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.35)';
+    ctx.shadowBlur = 6;
+    ctx.shadowOffsetY = 2;
+    ctx.fillText(dateStr, dx, dy);
+    ctx.restore();
+  }
+}
+
+function wrapText(ctx, text, maxWidth) {
+  const lines = [];
+  let cur = '';
+  for (const ch of text) {
+    const trial = cur + ch;
+    if (ctx.measureText(trial).width > maxWidth && cur) {
+      lines.push(cur);
+      cur = ch;
+    } else {
+      cur = trial;
+    }
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+
+function App() {
+  const [tab, setTab] = useState('shop');
+  const [product, setProduct] = useState({
+    name: '無線藍牙耳機 Pro',
+    salePrice: '1499',
+    originalPrice: '2999',
+    startDate: '2026-05-10',
+    endDate: '2026-05-20',
+    platform: '蝦皮',
+    image: null,
+  });
+  const [marketing, setMarketing] = useState({
+    caption: '🎧 抗噪降噪｜30小時長效續航\n旗艦音質超低延遲，限時下殺！',
+    hashtags: '#特價 #耳機 #限時優惠 #蝦皮商城',
+    selectedSizes: ['fb_post', 'ig_square', 'ec_banner'],
+  });
+  const [design, setDesign] = useState({
+    template: 't1',
+    customBg: null,
+    fonts: { title: 'Noto Sans TC', price: 'Anton', date: 'Noto Sans TC', badge: 'Noto Sans TC' },
+    colors: { title: '#ffffff', price: '#fff200', date: '#ffffff', badgeBg: '#ffeb3b', badgeText: '#1a1a1a' },
+    badgeText: '',
+    positions: JSON.parse(JSON.stringify(DEFAULT_POSITIONS)),
+  });
+
+  const [productImg, setProductImg] = useState(null);
+  const [customBgImg, setCustomBgImg] = useState(null);
+  const [exporting, setExporting] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [progressLabel, setProgressLabel] = useState('');
+  const previewCanvasRef = useRef(null);
+
+  // Load images when data URL changes
+  useEffect(() => {
+    if (product.image) loadImage(product.image).then(setProductImg).catch(() => setProductImg(null));
+    else setProductImg(null);
+  }, [product.image]);
+
+  useEffect(() => {
+    if (design.customBg) loadImage(design.customBg).then(setCustomBgImg).catch(() => setCustomBgImg(null));
+    else setCustomBgImg(null);
+  }, [design.customBg]);
+
+  // Apply template defaults to design when template changes
+  useEffect(() => {
+    const t = TEMPLATES[design.template];
+    if (!t) return;
+    setDesign(d => ({
+      ...d,
+      colors: { ...d.colors, badgeBg: t.badgeBg, badgeText: t.badgeText },
+      badgeText: d.badgeText || t.badge,
+    }));
+  }, [design.template]);
+
+  const config = useMemo(() => ({
+    template: design.template,
+    fonts: design.fonts,
+    colors: design.colors,
+    badgeText: design.badgeText,
+    positions: design.positions,
+    product,
+  }), [design, product]);
+
+  // Re-render preview canvas when anything changes
+  useEffect(() => {
+    if (!previewCanvasRef.current) return;
+    const previewW = 1200, previewH = 630;
+    document.fonts.ready.then(() => {
+      renderToCanvas(previewCanvasRef.current, previewW, previewH, config, productImg, customBgImg);
+    });
+  }, [config, productImg, customBgImg]);
+
+  const handleProductImage = async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const url = await fileToDataURL(f);
+    setProduct(p => ({ ...p, image: url }));
+  };
+
+  const handleBgImage = async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const url = await fileToDataURL(f);
+    setDesign(d => ({ ...d, customBg: url }));
+  };
+
+  const allSizes = useMemo(() => Object.values(SIZES).flat(), []);
+  const selectedSizesData = useMemo(
+    () => allSizes.filter(s => marketing.selectedSizes.includes(s.key)),
+    [allSizes, marketing.selectedSizes]
+  );
+
+  const exportAll = async () => {
+    if (selectedSizesData.length === 0) {
+      alert('請先在「行銷同仁」面板勾選至少一個輸出尺寸');
+      return;
+    }
+    setExporting(true);
+    setProgress(0);
+    await document.fonts.ready;
+    const offCanvas = document.createElement('canvas');
+    const productSlug = (product.name || 'banner').replace(/[^\w一-龥-]/g, '_').slice(0, 24);
+    for (let i = 0; i < selectedSizesData.length; i++) {
+      const s = selectedSizesData[i];
+      setProgressLabel(`正在輸出 ${s.label} (${s.w}x${s.h})…`);
+      await renderToCanvas(offCanvas, s.w, s.h, config, productImg, customBgImg);
+      const blob = await new Promise(res => offCanvas.toBlob(res, 'image/png'));
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${productSlug}_${s.label}_${s.w}x${s.h}.png`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setProgress(((i + 1) / selectedSizesData.length) * 100);
+      if (i < selectedSizesData.length - 1) await new Promise(r => setTimeout(r, 350));
+    }
+    setProgressLabel(`完成！共輸出 ${selectedSizesData.length} 張圖`);
+    setTimeout(() => { setExporting(false); setProgress(0); setProgressLabel(''); }, 1500);
+  };
+
+  return (
+    <div className="app">
+      {/* LEFT PANEL: 三角色分頁 */}
+      <div className="panel">
+        <h1>🎨 Banner Studio</h1>
+        <div style={{ fontSize: 12, color: '#888', marginBottom: 12 }}>三角色協作 · 一鍵輸出多尺寸促銷圖</div>
+
+        <div className="tabs">
+          <div className={`tab ${tab==='shop'?'active':''}`} onClick={() => setTab('shop')}>🛒 電商</div>
+          <div className={`tab ${tab==='market'?'active':''}`} onClick={() => setTab('market')}>📣 行銷</div>
+          <div className={`tab ${tab==='design'?'active':''}`} onClick={() => setTab('design')}>🎨 美編</div>
+        </div>
+
+        {tab === 'shop' && <ShopPanel product={product} setProduct={setProduct} onImage={handleProductImage} />}
+        {tab === 'market' && <MarketPanel marketing={marketing} setMarketing={setMarketing} />}
+        {tab === 'design' && <DesignPanel design={design} setDesign={setDesign} onBg={handleBgImage} />}
+      </div>
+
+      {/* CENTER: 預覽 */}
+      <div className="preview-area">
+        <div className="preview-card" style={{ width: '100%', maxWidth: 760 }}>
+          <div className="toolbar">
+            <span className="ratio-pill">即時預覽 · 1200×630</span>
+            <span style={{ fontSize: 12, color: '#666' }}>所有變更即時反映 · 拖曳區塊調整位置</span>
+          </div>
+          <PreviewWithDraggables
+            canvasRef={previewCanvasRef}
+            positions={design.positions}
+            setPositions={(p) => setDesign(d => ({ ...d, positions: p }))}
+          />
+        </div>
+
+        <div className="preview-card" style={{ width: '100%', maxWidth: 760 }}>
+          <h2 style={{ marginTop: 0 }}>📊 輸出概覽</h2>
+          <div className="stat-grid">
+            <div className="stat">
+              <div className="stat-num">{selectedSizesData.length}</div>
+              <div className="stat-label">已選尺寸</div>
+            </div>
+            <div className="stat">
+              <div className="stat-num">{TEMPLATES[design.template].name}</div>
+              <div className="stat-label">套用模板</div>
+            </div>
+          </div>
+          {selectedSizesData.length > 0 && (
+            <div style={{ marginTop: 12, fontSize: 12, color: '#555', lineHeight: 1.7 }}>
+              {selectedSizesData.map(s => `${s.label} (${s.w}×${s.h})`).join(' · ')}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* RIGHT PANEL: 輸出與摘要 */}
+      <div className="panel">
+        <h1>📦 一鍵輸出</h1>
+        <div style={{ fontSize: 12, color: '#888', marginBottom: 16 }}>
+          選擇的尺寸會用 Canvas 繪製成真實 PNG（非截圖），直接下載到本機。
+        </div>
+
+        <button
+          className="btn"
+          onClick={exportAll}
+          disabled={exporting || selectedSizesData.length === 0}
+        >
+          {exporting ? '輸出中…' : `輸出 ${selectedSizesData.length} 張 PNG`}
+        </button>
+
+        {exporting && (
+          <>
+            <div className="progress"><div className="progress-bar" style={{ width: `${progress}%` }}></div></div>
+            <div style={{ fontSize: 12, color: '#555', marginTop: 8 }}>{progressLabel}</div>
+          </>
+        )}
+
+        <h2>👥 角色職責</h2>
+        <div style={{ fontSize: 12, lineHeight: 1.9, color: '#444' }}>
+          <div><span className="role-tag shop">🛒 電商</span>商品名、價格、日期、平台、商品圖</div>
+          <div><span className="role-tag market">📣 行銷</span>文案、Hashtag、輸出尺寸</div>
+          <div><span className="role-tag design">🎨 美編</span>底圖、字型、顏色、區塊位置</div>
+        </div>
+
+        <h2>📝 行銷文案預覽</h2>
+        <div style={{ background: '#f8f9fb', padding: 12, borderRadius: 10, fontSize: 13, lineHeight: 1.6, whiteSpace: 'pre-wrap', color: '#1a1a1a' }}>
+          {marketing.caption}
+          {marketing.hashtags && <div style={{ color: '#4f46e5', marginTop: 6 }}>{marketing.hashtags}</div>}
+        </div>
+
+        <h2>🛒 商品摘要</h2>
+        <div style={{ fontSize: 12, lineHeight: 1.9, color: '#444' }}>
+          <div><b>{product.name || '（未命名）'}</b></div>
+          <div>特價 ${product.salePrice || '0'} {product.originalPrice && <span style={{ textDecoration: 'line-through', color: '#888' }}>${product.originalPrice}</span>}</div>
+          <div>{product.startDate} ～ {product.endDate}</div>
+          <div>平台：{product.platform || '未指定'}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ShopPanel({ product, setProduct, onImage }) {
+  const set = (k, v) => setProduct(p => ({ ...p, [k]: v }));
+  return (
+    <div>
+      <h2>🛒 電商同仁</h2>
+      <label>商品名稱</label>
+      <input type="text" value={product.name} onChange={e => set('name', e.target.value)} placeholder="例：無線藍牙耳機 Pro" />
+      <div className="row">
+        <div>
+          <label>特價 (NT$)</label>
+          <input type="number" value={product.salePrice} onChange={e => set('salePrice', e.target.value)} placeholder="1499" />
+        </div>
+        <div>
+          <label>原價 (NT$)</label>
+          <input type="number" value={product.originalPrice} onChange={e => set('originalPrice', e.target.value)} placeholder="2999" />
+        </div>
+      </div>
+      <div className="row">
+        <div>
+          <label>活動開始</label>
+          <input type="date" value={product.startDate} onChange={e => set('startDate', e.target.value)} />
+        </div>
+        <div>
+          <label>活動結束</label>
+          <input type="date" value={product.endDate} onChange={e => set('endDate', e.target.value)} />
+        </div>
+      </div>
+      <label>銷售平台</label>
+      <select value={product.platform} onChange={e => set('platform', e.target.value)}>
+        <option>蝦皮</option>
+        <option>momo</option>
+        <option>PChome</option>
+        <option>Yahoo購物</option>
+        <option>官方網站</option>
+        <option>露天</option>
+        <option>樂天</option>
+      </select>
+      <label>商品圖片</label>
+      <input type="file" accept="image/*" onChange={onImage} />
+      {product.image && <img src={product.image} alt="" style={{ width: '100%', marginTop: 8, borderRadius: 8 }} />}
+    </div>
+  );
+}
+
+function MarketPanel({ marketing, setMarketing }) {
+  const toggle = (key) => {
+    setMarketing(m => ({
+      ...m,
+      selectedSizes: m.selectedSizes.includes(key)
+        ? m.selectedSizes.filter(k => k !== key)
+        : [...m.selectedSizes, key],
+    }));
+  };
+  return (
+    <div>
+      <h2>📣 行銷同仁</h2>
+      <label>貼文文案</label>
+      <textarea value={marketing.caption} onChange={e => setMarketing(m => ({ ...m, caption: e.target.value }))} rows={4} />
+      <label>Hashtag</label>
+      <textarea value={marketing.hashtags} onChange={e => setMarketing(m => ({ ...m, hashtags: e.target.value }))} rows={2} />
+
+      <h2>📐 勾選輸出尺寸</h2>
+      {Object.entries(SIZES).map(([group, items]) => (
+        <div key={group} className="size-group">
+          <div className="size-group-title">{group}</div>
+          {items.map(s => (
+            <label key={s.key} className="size-checkbox">
+              <input
+                type="checkbox"
+                checked={marketing.selectedSizes.includes(s.key)}
+                onChange={() => toggle(s.key)}
+              />
+              {s.label} <span style={{ color: '#888' }}>· {s.w}×{s.h}</span>
+            </label>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DesignPanel({ design, setDesign, onBg }) {
+  const set = (k, v) => setDesign(d => ({ ...d, [k]: v }));
+  const setColor = (k, v) => setDesign(d => ({ ...d, colors: { ...d.colors, [k]: v } }));
+  const setFont = (k, v) => setDesign(d => ({ ...d, fonts: { ...d.fonts, [k]: v } }));
+  const resetPos = () => setDesign(d => ({ ...d, positions: JSON.parse(JSON.stringify(DEFAULT_POSITIONS)) }));
+
+  return (
+    <div>
+      <h2>🎨 美編同仁</h2>
+
+      <label>套版模板（漸層）</label>
+      <div className="template-grid">
+        {Object.entries(TEMPLATES).map(([k, t]) => (
+          <div
+            key={k}
+            className={`template-card ${design.template === k ? 'active' : ''}`}
+            style={{ background: `linear-gradient(${t.angle}deg, ${t.from}, ${t.to})` }}
+            onClick={() => set('template', k)}
+          >
+            {t.name}
+          </div>
+        ))}
+      </div>
+
+      <label>自訂底圖（覆蓋模板）</label>
+      <input type="file" accept="image/*" onChange={onBg} />
+      {design.customBg && (
+        <div style={{ marginTop: 6 }}>
+          <button className="btn btn-secondary" style={{ padding: 6, fontSize: 12 }} onClick={() => set('customBg', null)}>
+            清除自訂底圖
+          </button>
+        </div>
+      )}
+
+      <label>標語文字（Badge）</label>
+      <input type="text" value={design.badgeText} onChange={e => set('badgeText', e.target.value)} placeholder="⚡ 限時搶購" />
+
+      <h2>🎨 顏色設定</h2>
+      <div className="row">
+        <div><label>標題</label><input type="color" value={design.colors.title} onChange={e => setColor('title', e.target.value)} /></div>
+        <div><label>價格</label><input type="color" value={design.colors.price} onChange={e => setColor('price', e.target.value)} /></div>
+      </div>
+      <div className="row">
+        <div><label>日期</label><input type="color" value={design.colors.date} onChange={e => setColor('date', e.target.value)} /></div>
+        <div><label>標語底色</label><input type="color" value={design.colors.badgeBg} onChange={e => setColor('badgeBg', e.target.value)} /></div>
+      </div>
+      <label>標語字色</label>
+      <input type="color" value={design.colors.badgeText} onChange={e => setColor('badgeText', e.target.value)} />
+
+      <h2>🔤 字型</h2>
+      <div className="row">
+        <div>
+          <label>標題</label>
+          <select value={design.fonts.title} onChange={e => setFont('title', e.target.value)}>
+            {FONTS.map(f => <option key={f}>{f}</option>)}
+          </select>
+        </div>
+        <div>
+          <label>價格</label>
+          <select value={design.fonts.price} onChange={e => setFont('price', e.target.value)}>
+            {FONTS.map(f => <option key={f}>{f}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <h2>📍 區塊位置</h2>
+      <div className="help-text">在中間預覽圖上直接拖曳；或按下方重置回預設</div>
+      <button className="btn btn-secondary" style={{ marginTop: 8 }} onClick={resetPos}>↺ 重置位置</button>
+    </div>
+  );
+}
+
+function PreviewWithDraggables({ canvasRef, positions, setPositions }) {
+  const wrapRef = useRef(null);
+  const [dragging, setDragging] = useState(null);
+
+  const onMouseDown = (key) => (e) => {
+    e.preventDefault();
+    setDragging(key);
+  };
+
+  useEffect(() => {
+    if (!dragging) return;
+    const onMove = (e) => {
+      const rect = wrapRef.current.getBoundingClientRect();
+      const cx = (e.clientX - rect.left) / rect.width * 100;
+      const cy = (e.clientY - rect.top) / rect.height * 100;
+      setPositions({
+        ...positions,
+        [dragging]: {
+          x: Math.max(0, Math.min(95, cx)),
+          y: Math.max(0, Math.min(95, cy)),
+        },
+      });
+    };
+    const onUp = () => setDragging(null);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, [dragging, positions, setPositions]);
+
+  const labels = {
+    badge: 'Badge',
+    title: '標題',
+    price: '價格',
+    date: '日期',
+    product: '商品圖',
+  };
+
+  return (
+    <div className="preview-canvas-wrap" ref={wrapRef}>
+      <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
+      {Object.entries(positions).map(([key, p]) => (
+        <div
+          key={key}
+          className={`draggable ${dragging === key ? 'dragging' : ''}`}
+          style={{
+            left: `${p.x}%`,
+            top: `${p.y}%`,
+            color: '#fff',
+            fontSize: 11,
+            fontWeight: 700,
+            textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+            background: dragging === key ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.25)',
+            borderRadius: 4,
+          }}
+          onMouseDown={onMouseDown(key)}
+        >
+          {labels[key]}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>
