@@ -81,7 +81,7 @@
   .stat-num { font-size: 20px; font-weight: 900; color: #4f46e5; }
   .stat-label { font-size: 11px; color: #666; }
   .toolbar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
-  .multi-preview { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-top: 8px; }
+  .multi-preview { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-top: 8px; align-items: start; }
   .multi-preview-item { background: #f0f2f5; border-radius: 8px; overflow: hidden; }
   .multi-preview-item canvas { width: 100%; display: block; }
   .multi-preview-label { padding: 4px 6px; font-size: 10px; color: #555; text-align: center; background: #fff; }
@@ -1076,17 +1076,17 @@ function computeLayout(template, w, h) {
     L.date      = { x: w * 0.5, y: h - safeY, anchor: 'center' };
     L.logo      = { x: w * 0.5, y: safeY, w: w * 0.20, h: h * 0.08, anchor: 'tc' };
   } else if (layout === 'top-bottom') {
-    // 文字上 / 商品下（適合 IG Story 等高版面）
-    const textBottom = h * 0.45;
-    L.title     = { x: w * 0.5, y: h * 0.10, w: w * 0.88, anchor: 'center' };
-    L.subtitle  = { x: w * 0.5, y: h * 0.22, w: w * 0.88, anchor: 'center' };
-    L.badge     = { x: w * 0.5, y: h * 0.04, anchor: 'center' };
-    L.priceOrig = { x: w * 0.5, y: h * 0.30, anchor: 'center' };
-    L.price     = { x: w * 0.5, y: h * 0.35, anchor: 'center' };
-    L.product   = { x: w * 0.15, y: textBottom, w: w * 0.70, h: h * 0.45 };
-    L.cta       = { x: w * 0.5, y: h * 0.93, anchor: 'center' };
-    L.date      = { x: w * 0.5, y: h * 0.97, anchor: 'center' };
-    L.logo      = { x: w * 0.5, y: safeY, w: w * 0.18, h: h * 0.05, anchor: 'tc' };
+    // 文字上 / 商品中 / 價格下（適合 IG Story 等高版面）
+    // 區塊分配：頂部 25% 標題區 → 中間 45% 商品 → 底部 30% 價格+CTA
+    L.logo      = { x: w * 0.5, y: h * 0.02, w: w * 0.18, h: h * 0.04, anchor: 'tc' };
+    L.badge     = { x: w * 0.5, y: h * 0.06, anchor: 'center' };
+    L.title     = { x: w * 0.5, y: h * 0.11, w: w * 0.88, anchor: 'center' };
+    L.subtitle  = { x: w * 0.5, y: h * 0.20, w: w * 0.88, anchor: 'center' };
+    L.product   = { x: w * 0.10, y: h * 0.27, w: w * 0.80, h: h * 0.45 };
+    L.priceOrig = { x: w * 0.5, y: h * 0.74, anchor: 'center' };
+    L.price     = { x: w * 0.5, y: h * 0.78, anchor: 'center' };
+    L.cta       = { x: w * 0.5, y: h * 0.91, anchor: 'center' };
+    L.date      = { x: w * 0.5, y: h * 0.96, anchor: 'center' };
   }
 
   L.tiny = tiny;
