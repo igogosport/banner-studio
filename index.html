@@ -680,6 +680,70 @@ function estimateCostPerImage(provider, quality = 'standard', model = 'dall-e-3'
   const twd = Math.round(usd * USD_TO_TWD * 10) / 10;
   return { usd, twd, label: `約 NT$ ${twd} / 張` };
 }
+/* 自動去背（偵測邊緣色，相近顏色變透明，邊緣柔化）
+   適用：白底 / 純色背景的商品圖
+   不適用：複雜背景、商品色與背景色接近的情況 */
+async function autoRemoveBg(dataUrl, opts = {}) {
+  const { tolerance = 40, edgeRamp = 30 } = opts;
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const w = canvas.width, h = canvas.height;
+      const imgData = ctx.getImageData(0, 0, w, h);
+      const data = imgData.data;
+
+      // 採樣邊緣 200 點推算背景色
+      let bgR = 0, bgG = 0, bgB = 0, count = 0;
+      const sample = (x, y) => {
+        const i = (y * w + x) * 4;
+        bgR += data[i]; bgG += data[i+1]; bgB += data[i+2]; count++;
+      };
+      const stepX = Math.max(1, Math.floor(w / 50));
+      const stepY = Math.max(1, Math.floor(h / 50));
+      for (let x = 0; x < w; x += stepX) { sample(x, 0); sample(x, h - 1); }
+      for (let y = 0; y < h; y += stepY) { sample(0, y); sample(w - 1, y); }
+      bgR /= count; bgG /= count; bgB /= count;
+
+      // 邊緣色不夠亮（< 180）→ 不是白底，放棄
+      const avgBg = (bgR + bgG + bgB) / 3;
+      if (avgBg < 180) {
+        resolve({ dataUrl, removed: false, reason: '背景色不夠亮（avg=' + Math.round(avgBg) + '），可能是深色或複雜背景，跳過自動去背' });
+        return;
+      }
+
+      // 像素級處理：與邊緣色距離小於 tolerance → 全透明；距離 tolerance ~ tolerance+edgeRamp → 漸進透明
+      let removedPixels = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        const dr = data[i] - bgR;
+        const dg = data[i+1] - bgG;
+        const db = data[i+2] - bgB;
+        const dist = Math.sqrt(dr*dr + dg*dg + db*db);
+        if (dist < tolerance) {
+          data[i+3] = 0;
+          removedPixels++;
+        } else if (dist < tolerance + edgeRamp) {
+          data[i+3] = Math.round(255 * (dist - tolerance) / edgeRamp);
+        }
+      }
+
+      ctx.putImageData(imgData, 0, 0);
+      resolve({
+        dataUrl: canvas.toDataURL('image/png'),
+        removed: true,
+        ratio: (removedPixels / (w * h) * 100).toFixed(1),
+        bgColor: `rgb(${Math.round(bgR)}, ${Math.round(bgG)}, ${Math.round(bgB)})`,
+      });
+    };
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+}
+
 /* 將 dataURL 轉成 Blob */
 function dataUrlToBlob(dataUrl) {
   const [meta, base64] = dataUrl.split(',');
@@ -2459,6 +2523,7 @@ function DesignPanel({ design, setDesign, template, filterCategory, setFilterCat
       {product.image && (
         <>
           <img src={product.image} alt="" style={{ width: '100%', marginTop: 8, borderRadius: 8, background: 'repeating-conic-gradient(#e5e7eb 0% 25%, #fff 0% 50%) 50% / 16px 16px', padding: 4 }} />
+          <BgRemoveButton product={product} setProduct={setProduct} />
           <button className="btn btn-secondary" style={{ padding: 6, fontSize: 12, marginTop: 4 }} onClick={() => setProduct(p => ({ ...p, image: null }))}>移除商品圖</button>
         </>
       )}
@@ -2506,6 +2571,79 @@ function DesignPanel({ design, setDesign, template, filterCategory, setFilterCat
 /* ============================================================
    Template Thumbnail
    ============================================================ */
+/* ============================================================
+   BgRemoveButton — 自動去背按鈕（白底 → 透明）
+   ============================================================ */
+function BgRemoveButton({ product, setProduct }) {
+  const [processing, setProcessing] = useState(false);
+  const [result, setResult] = useState(null);
+  const [originalImage, setOriginalImage] = useState(null);
+
+  const handleRemove = async () => {
+    if (!product.image) return;
+    setProcessing(true);
+    setResult(null);
+    try {
+      // 保留原圖以便還原
+      if (!originalImage) setOriginalImage(product.image);
+      const r = await autoRemoveBg(product.image);
+      if (r.removed) {
+        setProduct(p => ({ ...p, image: r.dataUrl }));
+        setResult({ ok: true, msg: `✓ 移除了 ${r.ratio}% 的背景像素（背景色 ${r.bgColor}）` });
+      } else {
+        setResult({ ok: false, msg: r.reason || '無法自動去背' });
+      }
+    } catch (e) {
+      setResult({ ok: false, msg: e.message });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleRestore = () => {
+    if (originalImage) {
+      setProduct(p => ({ ...p, image: originalImage }));
+      setResult(null);
+      setOriginalImage(null);
+    }
+  };
+
+  return (
+    <div style={{ marginTop: 4 }}>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        <button
+          className="btn btn-secondary"
+          style={{ padding: 6, fontSize: 12, width: 'auto', flex: 1, background: '#dcfce7', color: '#166534' }}
+          onClick={handleRemove}
+          disabled={processing}
+        >
+          {processing ? '🪄 去背中…' : '✨ 自動去除白底'}
+        </button>
+        {originalImage && (
+          <button
+            className="btn btn-secondary"
+            style={{ padding: 6, fontSize: 12, width: 'auto' }}
+            onClick={handleRestore}
+          >
+            ↩️ 還原
+          </button>
+        )}
+      </div>
+      {result && (
+        <div style={{
+          fontSize: 10, marginTop: 4, padding: 6, borderRadius: 6,
+          color: result.ok ? '#166534' : '#92400e',
+          background: result.ok ? '#dcfce7' : '#fef3c7',
+          lineHeight: 1.5,
+        }}>
+          {result.msg}
+          {result.ok && <div style={{ marginTop: 2, color: '#65a30d' }}>不滿意？按「↩️ 還原」回到原圖，或重新上傳。</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ============================================================
    Compose Panel — AI 場景 + Canvas 文字
    ============================================================ */
@@ -2621,6 +2759,7 @@ function ComposePanel({ design, setDesign, template, filterCategory, setFilterCa
       {product.image && (
         <>
           <img src={product.image} alt="" style={{ width: '100%', marginTop: 8, background: 'repeating-conic-gradient(#e5e7eb 0% 25%, #fff 0% 50%) 50% / 16px 16px', padding: 4 }} />
+          <BgRemoveButton product={product} setProduct={setProduct} />
           <button className="btn btn-secondary" style={{ padding: 6, fontSize: 12, marginTop: 4 }} onClick={() => setProduct(p => ({ ...p, image: null }))}>移除商品圖</button>
         </>
       )}
