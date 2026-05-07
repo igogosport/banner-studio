@@ -616,22 +616,36 @@ function drawAccent(ctx, accent, w, h) {
   }
 }
 
+// Cache: 一次性產生 noise pattern，之後所有 banner 共用
+let _noisePatternCanvas = null;
+function getNoisePattern() {
+  if (_noisePatternCanvas) return _noisePatternCanvas;
+  const N = 256;
+  const c = document.createElement('canvas');
+  c.width = N; c.height = N;
+  const cctx = c.getContext('2d');
+  const imgData = cctx.createImageData(N, N);
+  const data = imgData.data;
+  let seed = 7;
+  for (let i = 0; i < data.length; i += 4) {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    const v = Math.floor((seed / 0x7fffffff) * 255);
+    data[i] = data[i+1] = data[i+2] = v;
+    data[i+3] = 255;
+  }
+  cctx.putImageData(imgData, 0, 0);
+  _noisePatternCanvas = c;
+  return c;
+}
+
 function drawNoise(ctx, intensity, w, h) {
   if (!intensity) return;
-  const cellSize = 2;
-  const cols = Math.ceil(w / cellSize);
-  const rows = Math.ceil(h / cellSize);
   ctx.save();
   ctx.globalAlpha = intensity;
-  let seed = 7;
-  const rand = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
-  for (let i = 0; i < cols; i++) {
-    for (let j = 0; j < rows; j++) {
-      const v = Math.floor(rand() * 255);
-      ctx.fillStyle = `rgb(${v},${v},${v})`;
-      ctx.fillRect(i * cellSize, j * cellSize, cellSize, cellSize);
-    }
-  }
+  ctx.globalCompositeOperation = 'overlay';
+  const pat = ctx.createPattern(getNoisePattern(), 'repeat');
+  ctx.fillStyle = pat;
+  ctx.fillRect(0, 0, w, h);
   ctx.restore();
 }
 
@@ -1481,9 +1495,10 @@ function DesignPanel({ design, setDesign, template, filterCategory, setFilterCat
       </div>
 
       <div className="template-gallery">
-        {filtered.map(t => (
+        {filtered.map((t, i) => (
           <TemplateThumb
             key={t.id}
+            idx={i}
             template={t}
             active={t.id === design.templateId}
             onClick={() => setDesign(d => ({ ...d, templateId: t.id, palette: {} }))}
@@ -1543,21 +1558,27 @@ function DesignPanel({ design, setDesign, template, filterCategory, setFilterCat
 /* ============================================================
    Template Thumbnail
    ============================================================ */
-function TemplateThumb({ template, active, onClick, productImg }) {
+function TemplateThumb({ template, active, onClick, productImg, idx }) {
   const ref = useRef(null);
   useEffect(() => {
     if (!ref.current) return;
-    document.fonts.ready.then(() => {
-      renderTemplate(ref.current, 320, 180, template, {
-        title: '商品名稱',
-        subtitle: '副標賣點',
-        salePrice: '999',
-        originalPrice: '1999',
-        badge: template.defaults.badge,
-        cta: template.defaults.cta,
-      }, productImg, null, null);
-    });
-  }, [template, productImg]);
+    let cancelled = false;
+    const t = setTimeout(() => {
+      if (cancelled || !ref.current) return;
+      document.fonts.ready.then(() => {
+        if (cancelled || !ref.current) return;
+        renderTemplate(ref.current, 320, 180, template, {
+          title: '商品名稱',
+          subtitle: '副標賣點',
+          salePrice: '999',
+          originalPrice: '1999',
+          badge: template.defaults.badge,
+          cta: template.defaults.cta,
+        }, productImg, null, null);
+      });
+    }, (idx || 0) * 80);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [template, productImg, idx]);
 
   return (
     <div className={`template-thumb ${active ? 'active' : ''}`} onClick={onClick}>
@@ -1573,25 +1594,30 @@ function TemplateThumb({ template, active, onClick, productImg }) {
 function MultiPreview({ sizes, template, content, productImg, logoImg, customBgImg, overrides }) {
   return (
     <div className="multi-preview">
-      {sizes.map(s => (
-        <PreviewItem key={s.key} size={s} template={template} content={content} productImg={productImg} logoImg={logoImg} customBgImg={customBgImg} overrides={overrides} />
+      {sizes.map((s, i) => (
+        <PreviewItem key={s.key} idx={i} size={s} template={template} content={content} productImg={productImg} logoImg={logoImg} customBgImg={customBgImg} overrides={overrides} />
       ))}
     </div>
   );
 }
 
-function PreviewItem({ size, template, content, productImg, logoImg, customBgImg, overrides }) {
+function PreviewItem({ size, template, content, productImg, logoImg, customBgImg, overrides, idx }) {
   const ref = useRef(null);
   useEffect(() => {
     if (!ref.current) return;
-    document.fonts.ready.then(() => {
-      // 縮圖最大 360px 寬
-      const scale = Math.min(360 / size.w, 240 / size.h, 1);
-      const tw = Math.round(size.w * scale);
-      const th = Math.round(size.h * scale);
-      renderTemplate(ref.current, tw, th, template, content, productImg, logoImg, customBgImg, overrides);
-    });
-  }, [size, template, content, productImg, logoImg, customBgImg, overrides]);
+    let cancelled = false;
+    const t = setTimeout(() => {
+      if (cancelled || !ref.current) return;
+      document.fonts.ready.then(() => {
+        if (cancelled || !ref.current) return;
+        const scale = Math.min(360 / size.w, 240 / size.h, 1);
+        const tw = Math.round(size.w * scale);
+        const th = Math.round(size.h * scale);
+        renderTemplate(ref.current, tw, th, template, content, productImg, logoImg, customBgImg, overrides);
+      });
+    }, idx * 60);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [size, template, content, productImg, logoImg, customBgImg, overrides, idx]);
   return (
     <div className="multi-preview-item">
       <canvas ref={ref} />
