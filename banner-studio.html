@@ -90,7 +90,7 @@
 <script type="text/babel">
 const { useState, useEffect, useRef, useMemo } = React;
 
-const SIZES = {
+const SHOP_SIZES = {
   '🛒 蝦皮': [
     { key: 'shopee_1140x400', label: '1140×400', w: 1140, h: 400 },
     { key: 'shopee_1200x500', label: '1200×500', w: 1200, h: 500 },
@@ -139,6 +139,9 @@ const SIZES = {
     { key: 'other_960x540',  label: '960×540',  w: 960,  h: 540 },
     { key: 'other_960x450',  label: '960×450',  w: 960,  h: 450 },
   ],
+};
+
+const MARKET_SIZES = {
   '📐 社群貼文': [
     { key: 'social_1080x1080', label: '1080×1080', w: 1080, h: 1080 },
     { key: 'social_1040x1040', label: '1040×1040', w: 1040, h: 1040 },
@@ -164,6 +167,8 @@ const SIZES = {
     { key: 'visual_1920x400', label: '1920×400', w: 1920, h: 400 },
   ],
 };
+
+const SIZES = { ...SHOP_SIZES, ...MARKET_SIZES };
 
 const TEMPLATES = {
   t1: { name: '閃電特價', from: '#ff4500', to: '#ff8c00', angle: 135, badge: '⚡ 限時搶購', badgeBg: '#ffeb3b', badgeText: '#1a1a1a' },
@@ -403,11 +408,12 @@ function App() {
     endDate: '2026-05-20',
     platform: '蝦皮',
     image: null,
-    selectedSizes: ['social_1080x1080', 'igstory_1080x1920', 'share_1200x630'],
+    selectedSizes: ['shopee_1200x500', 'momo_852x426'],
   });
   const [marketing, setMarketing] = useState({
     caption: '🎧 抗噪降噪｜30小時長效續航\n旗艦音質超低延遲，限時下殺！',
     hashtags: '#特價 #耳機 #限時優惠 #蝦皮商城',
+    selectedSizes: ['social_1080x1080', 'igstory_1080x1920', 'share_1200x630'],
   });
   const [design, setDesign] = useState({
     template: 't1',
@@ -480,14 +486,14 @@ function App() {
   };
 
   const allSizes = useMemo(() => Object.values(SIZES).flat(), []);
-  const selectedSizesData = useMemo(
-    () => allSizes.filter(s => product.selectedSizes.includes(s.key)),
-    [allSizes, product.selectedSizes]
-  );
+  const selectedSizesData = useMemo(() => {
+    const allSelected = [...product.selectedSizes, ...marketing.selectedSizes];
+    return allSizes.filter(s => allSelected.includes(s.key));
+  }, [allSizes, product.selectedSizes, marketing.selectedSizes]);
 
   const exportAll = async () => {
     if (selectedSizesData.length === 0) {
-      alert('請先在「電商同仁」面板勾選至少一個輸出尺寸');
+      alert('請先在「電商同仁」或「行銷同仁」面板勾選至少一個輸出尺寸');
       return;
     }
     setExporting(true);
@@ -547,13 +553,17 @@ function App() {
 
         <div className="preview-card" style={{ width: '100%', maxWidth: 760 }}>
           <h2 style={{ marginTop: 0 }}>📊 輸出概覽</h2>
-          <div className="stat-grid">
+          <div className="stat-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
             <div className="stat">
-              <div className="stat-num">{selectedSizesData.length}</div>
-              <div className="stat-label">已選尺寸</div>
+              <div className="stat-num">{product.selectedSizes.length}</div>
+              <div className="stat-label">🛒 通路尺寸</div>
             </div>
             <div className="stat">
-              <div className="stat-num">{TEMPLATES[design.template].name}</div>
+              <div className="stat-num">{marketing.selectedSizes.length}</div>
+              <div className="stat-label">📐 行銷尺寸</div>
+            </div>
+            <div className="stat">
+              <div className="stat-num" style={{ fontSize: 14 }}>{TEMPLATES[design.template].name}</div>
               <div className="stat-label">套用模板</div>
             </div>
           </div>
@@ -589,8 +599,8 @@ function App() {
 
         <h2>👥 角色職責</h2>
         <div style={{ fontSize: 12, lineHeight: 1.9, color: '#444' }}>
-          <div><span className="role-tag shop">🛒 電商</span>商品資訊、商品圖、輸出尺寸</div>
-          <div><span className="role-tag market">📣 行銷</span>貼文文案、Hashtag</div>
+          <div><span className="role-tag shop">🛒 電商</span>商品資訊、商品圖、🛒通路尺寸</div>
+          <div><span className="role-tag market">📣 行銷</span>貼文文案、Hashtag、📐行銷尺寸</div>
           <div><span className="role-tag design">🎨 美編</span>底圖、字型、顏色、區塊位置</div>
         </div>
 
@@ -634,7 +644,7 @@ function ShopPanel({ product, setProduct, onImage }) {
       };
     });
   };
-  const selectAll = () => setProduct(p => ({ ...p, selectedSizes: Object.values(SIZES).flat().map(s => s.key) }));
+  const selectAll = () => setProduct(p => ({ ...p, selectedSizes: Object.values(SHOP_SIZES).flat().map(s => s.key) }));
   const clearAll = () => setProduct(p => ({ ...p, selectedSizes: [] }));
   return (
     <div>
@@ -675,13 +685,16 @@ function ShopPanel({ product, setProduct, onImage }) {
       <input type="file" accept="image/*" onChange={onImage} />
       {product.image && <img src={product.image} alt="" style={{ width: '100%', marginTop: 8, borderRadius: 8 }} />}
 
-      <h2>📐 勾選輸出尺寸</h2>
+      <h2>🛒 通路尺寸</h2>
+      <div style={{ fontSize: 11, color: '#888', marginBottom: 8, lineHeight: 1.6 }}>
+        各電商平台規定的圖片尺寸。請依據此檔商品要上架的通路勾選。
+      </div>
       <div style={{ display: 'flex', gap: 6, marginBottom: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <button className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: 12, width: 'auto' }} onClick={selectAll}>全選</button>
         <button className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: 12, width: 'auto' }} onClick={clearAll}>清空</button>
         <span style={{ fontSize: 11, color: '#888', marginLeft: 'auto' }}>已選 <b style={{ color: '#4f46e5' }}>{product.selectedSizes.length}</b> 個</span>
       </div>
-      {Object.entries(SIZES).map(([group, items]) => {
+      {Object.entries(SHOP_SIZES).map(([group, items]) => {
         const allIn = items.every(i => product.selectedSizes.includes(i.key));
         return (
           <div key={group} className="size-group">
@@ -712,19 +725,71 @@ function ShopPanel({ product, setProduct, onImage }) {
 }
 
 function MarketPanel({ marketing, setMarketing }) {
+  const toggleSize = (key) => {
+    setMarketing(m => ({
+      ...m,
+      selectedSizes: m.selectedSizes.includes(key)
+        ? m.selectedSizes.filter(k => k !== key)
+        : [...m.selectedSizes, key],
+    }));
+  };
+  const selectGroup = (items) => {
+    setMarketing(m => {
+      const groupKeys = items.map(i => i.key);
+      const allIn = groupKeys.every(k => m.selectedSizes.includes(k));
+      return {
+        ...m,
+        selectedSizes: allIn
+          ? m.selectedSizes.filter(k => !groupKeys.includes(k))
+          : Array.from(new Set([...m.selectedSizes, ...groupKeys])),
+      };
+    });
+  };
+  const selectAll = () => setMarketing(m => ({ ...m, selectedSizes: Object.values(MARKET_SIZES).flat().map(s => s.key) }));
+  const clearAll = () => setMarketing(m => ({ ...m, selectedSizes: [] }));
   return (
     <div>
       <h2>📣 行銷同仁</h2>
-      <div style={{ fontSize: 12, color: '#888', marginBottom: 12, lineHeight: 1.6 }}>
-        負責文案與 Hashtag。輸出尺寸交由電商同仁根據通路需求勾選。
-      </div>
       <label>貼文文案</label>
       <textarea value={marketing.caption} onChange={e => setMarketing(m => ({ ...m, caption: e.target.value }))} rows={5} />
       <label>Hashtag</label>
       <textarea value={marketing.hashtags} onChange={e => setMarketing(m => ({ ...m, hashtags: e.target.value }))} rows={3} />
-      <div style={{ fontSize: 11, color: '#888', marginTop: 4, lineHeight: 1.6 }}>
-        💡 文案會顯示在右側預覽區，方便團隊一起 review；目前不會直接合成到圖片內，請放心輸入完整文案。
+
+      <h2>📐 行銷尺寸</h2>
+      <div style={{ fontSize: 11, color: '#888', marginBottom: 8, lineHeight: 1.6 }}>
+        社群、影片、活動主視覺等通用尺寸，可彈性使用於多個行銷渠道。
       </div>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <button className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: 12, width: 'auto' }} onClick={selectAll}>全選</button>
+        <button className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: 12, width: 'auto' }} onClick={clearAll}>清空</button>
+        <span style={{ fontSize: 11, color: '#888', marginLeft: 'auto' }}>已選 <b style={{ color: '#4f46e5' }}>{marketing.selectedSizes.length}</b> 個</span>
+      </div>
+      {Object.entries(MARKET_SIZES).map(([group, items]) => {
+        const allIn = items.every(i => marketing.selectedSizes.includes(i.key));
+        return (
+          <div key={group} className="size-group">
+            <div className="size-group-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>{group}</span>
+              <span
+                onClick={() => selectGroup(items)}
+                style={{ fontSize: 10, color: '#4f46e5', cursor: 'pointer', fontWeight: 600 }}
+              >
+                {allIn ? '取消整組' : '勾選整組'}
+              </span>
+            </div>
+            {items.map(s => (
+              <label key={s.key} className="size-checkbox">
+                <input
+                  type="checkbox"
+                  checked={marketing.selectedSizes.includes(s.key)}
+                  onChange={() => toggleSize(s.key)}
+                />
+                {s.label} <span style={{ color: '#888' }}>· {s.w}×{s.h}</span>
+              </label>
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 }
