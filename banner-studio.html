@@ -139,27 +139,27 @@ const SIZES = {
     { key: 'other_960x540',  label: '960×540',  w: 960,  h: 540 },
     { key: 'other_960x450',  label: '960×450',  w: 960,  h: 450 },
   ],
-  '📣 社群貼文': [
+  '📐 社群貼文': [
     { key: 'social_1080x1080', label: '1080×1080', w: 1080, h: 1080 },
     { key: 'social_1040x1040', label: '1040×1040', w: 1040, h: 1040 },
   ],
-  '📣 IG Story / 限動': [
+  '📐 IG Story / 限動': [
     { key: 'igstory_1080x1920', label: '1080×1920', w: 1080, h: 1920 },
   ],
-  '📣 YouTube 封面': [
+  '📐 YouTube 封面': [
     { key: 'yt_1920x1080', label: '1920×1080', w: 1920, h: 1080 },
   ],
-  '📣 LINE 圖文選單': [
+  '📐 LINE 圖文選單': [
     { key: 'line_1200x810', label: '1200×810', w: 1200, h: 810 },
   ],
-  '📣 分享圖': [
+  '📐 分享圖': [
     { key: 'share_1200x630', label: '1200×630', w: 1200, h: 630 },
   ],
-  '📣 活動 Icon': [
+  '📐 活動 Icon': [
     { key: 'icon_114x114', label: '114×114', w: 114, h: 114 },
     { key: 'icon_240x240', label: '240×240', w: 240, h: 240 },
   ],
-  '📣 活動主視覺': [
+  '📐 活動主視覺': [
     { key: 'visual_640x320',  label: '640×320',  w: 640,  h: 320 },
     { key: 'visual_1920x400', label: '1920×400', w: 1920, h: 400 },
   ],
@@ -403,11 +403,11 @@ function App() {
     endDate: '2026-05-20',
     platform: '蝦皮',
     image: null,
+    selectedSizes: ['social_1080x1080', 'igstory_1080x1920', 'share_1200x630'],
   });
   const [marketing, setMarketing] = useState({
     caption: '🎧 抗噪降噪｜30小時長效續航\n旗艦音質超低延遲，限時下殺！',
     hashtags: '#特價 #耳機 #限時優惠 #蝦皮商城',
-    selectedSizes: ['social_1080x1080', 'igstory_1080x1920', 'share_1200x630'],
   });
   const [design, setDesign] = useState({
     template: 't1',
@@ -481,13 +481,13 @@ function App() {
 
   const allSizes = useMemo(() => Object.values(SIZES).flat(), []);
   const selectedSizesData = useMemo(
-    () => allSizes.filter(s => marketing.selectedSizes.includes(s.key)),
-    [allSizes, marketing.selectedSizes]
+    () => allSizes.filter(s => product.selectedSizes.includes(s.key)),
+    [allSizes, product.selectedSizes]
   );
 
   const exportAll = async () => {
     if (selectedSizesData.length === 0) {
-      alert('請先在「行銷同仁」面板勾選至少一個輸出尺寸');
+      alert('請先在「電商同仁」面板勾選至少一個輸出尺寸');
       return;
     }
     setExporting(true);
@@ -589,8 +589,8 @@ function App() {
 
         <h2>👥 角色職責</h2>
         <div style={{ fontSize: 12, lineHeight: 1.9, color: '#444' }}>
-          <div><span className="role-tag shop">🛒 電商</span>商品名、價格、日期、平台、商品圖</div>
-          <div><span className="role-tag market">📣 行銷</span>文案、Hashtag、輸出尺寸</div>
+          <div><span className="role-tag shop">🛒 電商</span>商品資訊、商品圖、輸出尺寸</div>
+          <div><span className="role-tag market">📣 行銷</span>貼文文案、Hashtag</div>
           <div><span className="role-tag design">🎨 美編</span>底圖、字型、顏色、區塊位置</div>
         </div>
 
@@ -614,6 +614,28 @@ function App() {
 
 function ShopPanel({ product, setProduct, onImage }) {
   const set = (k, v) => setProduct(p => ({ ...p, [k]: v }));
+  const toggleSize = (key) => {
+    setProduct(p => ({
+      ...p,
+      selectedSizes: p.selectedSizes.includes(key)
+        ? p.selectedSizes.filter(k => k !== key)
+        : [...p.selectedSizes, key],
+    }));
+  };
+  const selectGroup = (items) => {
+    setProduct(p => {
+      const groupKeys = items.map(i => i.key);
+      const allIn = groupKeys.every(k => p.selectedSizes.includes(k));
+      return {
+        ...p,
+        selectedSizes: allIn
+          ? p.selectedSizes.filter(k => !groupKeys.includes(k))
+          : Array.from(new Set([...p.selectedSizes, ...groupKeys])),
+      };
+    });
+  };
+  const selectAll = () => setProduct(p => ({ ...p, selectedSizes: Object.values(SIZES).flat().map(s => s.key) }));
+  const clearAll = () => setProduct(p => ({ ...p, selectedSizes: [] }));
   return (
     <div>
       <h2>🛒 電商同仁</h2>
@@ -652,43 +674,57 @@ function ShopPanel({ product, setProduct, onImage }) {
       <label>商品圖片</label>
       <input type="file" accept="image/*" onChange={onImage} />
       {product.image && <img src={product.image} alt="" style={{ width: '100%', marginTop: 8, borderRadius: 8 }} />}
+
+      <h2>📐 勾選輸出尺寸</h2>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <button className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: 12, width: 'auto' }} onClick={selectAll}>全選</button>
+        <button className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: 12, width: 'auto' }} onClick={clearAll}>清空</button>
+        <span style={{ fontSize: 11, color: '#888', marginLeft: 'auto' }}>已選 <b style={{ color: '#4f46e5' }}>{product.selectedSizes.length}</b> 個</span>
+      </div>
+      {Object.entries(SIZES).map(([group, items]) => {
+        const allIn = items.every(i => product.selectedSizes.includes(i.key));
+        return (
+          <div key={group} className="size-group">
+            <div className="size-group-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>{group}</span>
+              <span
+                onClick={() => selectGroup(items)}
+                style={{ fontSize: 10, color: '#4f46e5', cursor: 'pointer', fontWeight: 600 }}
+              >
+                {allIn ? '取消整組' : '勾選整組'}
+              </span>
+            </div>
+            {items.map(s => (
+              <label key={s.key} className="size-checkbox">
+                <input
+                  type="checkbox"
+                  checked={product.selectedSizes.includes(s.key)}
+                  onChange={() => toggleSize(s.key)}
+                />
+                {s.label} <span style={{ color: '#888' }}>· {s.w}×{s.h}</span>
+              </label>
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 }
 
 function MarketPanel({ marketing, setMarketing }) {
-  const toggle = (key) => {
-    setMarketing(m => ({
-      ...m,
-      selectedSizes: m.selectedSizes.includes(key)
-        ? m.selectedSizes.filter(k => k !== key)
-        : [...m.selectedSizes, key],
-    }));
-  };
   return (
     <div>
       <h2>📣 行銷同仁</h2>
+      <div style={{ fontSize: 12, color: '#888', marginBottom: 12, lineHeight: 1.6 }}>
+        負責文案與 Hashtag。輸出尺寸交由電商同仁根據通路需求勾選。
+      </div>
       <label>貼文文案</label>
-      <textarea value={marketing.caption} onChange={e => setMarketing(m => ({ ...m, caption: e.target.value }))} rows={4} />
+      <textarea value={marketing.caption} onChange={e => setMarketing(m => ({ ...m, caption: e.target.value }))} rows={5} />
       <label>Hashtag</label>
-      <textarea value={marketing.hashtags} onChange={e => setMarketing(m => ({ ...m, hashtags: e.target.value }))} rows={2} />
-
-      <h2>📐 勾選輸出尺寸</h2>
-      {Object.entries(SIZES).map(([group, items]) => (
-        <div key={group} className="size-group">
-          <div className="size-group-title">{group}</div>
-          {items.map(s => (
-            <label key={s.key} className="size-checkbox">
-              <input
-                type="checkbox"
-                checked={marketing.selectedSizes.includes(s.key)}
-                onChange={() => toggle(s.key)}
-              />
-              {s.label} <span style={{ color: '#888' }}>· {s.w}×{s.h}</span>
-            </label>
-          ))}
-        </div>
-      ))}
+      <textarea value={marketing.hashtags} onChange={e => setMarketing(m => ({ ...m, hashtags: e.target.value }))} rows={3} />
+      <div style={{ fontSize: 11, color: '#888', marginTop: 4, lineHeight: 1.6 }}>
+        💡 文案會顯示在右側預覽區，方便團隊一起 review；目前不會直接合成到圖片內，請放心輸入完整文案。
+      </div>
     </div>
   );
 }
