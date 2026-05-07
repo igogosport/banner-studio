@@ -1136,19 +1136,22 @@ function App() {
   const handleProductImage = async (e) => {
     const f = e.target.files[0];
     if (!f) return;
-    setProduct(p => ({ ...p, image: await fileToDataURL(f) }));
+    const url = await fileToDataURL(f);
+    setProduct(p => ({ ...p, image: url }));
   };
 
   const handleLogoImage = async (e) => {
     const f = e.target.files[0];
     if (!f) return;
-    setDesign(d => ({ ...d, logo: await fileToDataURL(f) }));
+    const url = await fileToDataURL(f);
+    setDesign(d => ({ ...d, logo: url }));
   };
 
   const handleBgImage = async (e) => {
     const f = e.target.files[0];
     if (!f) return;
-    setDesign(d => ({ ...d, customBg: await fileToDataURL(f) }));
+    const url = await fileToDataURL(f);
+    setDesign(d => ({ ...d, customBg: url }));
   };
 
   const allSizes = useMemo(() => Object.values(SIZES).flat(), []);
