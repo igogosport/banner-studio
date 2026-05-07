@@ -1314,6 +1314,13 @@ async function renderTemplate(canvas, w, h, template, content, productImg, logoI
   const typo = { ...template.typography, ...(overrides.typography || {}) };
   const base = Math.min(w, h); // typography baseline
 
+  // === Hero 完整設計模式：直接 cover-fit 整張 AI 圖，不疊加任何元件 ===
+  const fullDesignImg = overrides.fullDesignImg;
+  if (fullDesignImg) {
+    drawImageCover(ctx, fullDesignImg, 0, 0, w, h);
+    return; // 不畫任何文字 / 商品 / Logo
+  }
+
   // === 背景層 ===
   if (customBgImg) {
     drawImageCover(ctx, customBgImg, 0, 0, w, h);
@@ -1446,6 +1453,7 @@ function App() {
   const [productImg, setProductImg] = useState(null);
   const [logoImg, setLogoImg] = useState(null);
   const [customBgImg, setCustomBgImg] = useState(null);
+  const [fullDesignImg, setFullDesignImg] = useState(null);
   const [exporting, setExporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [progressLabel, setProgressLabel] = useState('');
@@ -1466,6 +1474,11 @@ function App() {
     if (design.customBg) loadImage(design.customBg).then(setCustomBgImg).catch(() => setCustomBgImg(null));
     else setCustomBgImg(null);
   }, [design.customBg]);
+
+  useEffect(() => {
+    if (design.fullDesign) loadImage(design.fullDesign).then(setFullDesignImg).catch(() => setFullDesignImg(null));
+    else setFullDesignImg(null);
+  }, [design.fullDesign]);
 
   const template = useMemo(() => {
     if (design.brandId && design.brandId !== 'general') {
@@ -1498,9 +1511,9 @@ function App() {
   useEffect(() => {
     if (!previewCanvasRef.current) return;
     document.fonts.ready.then(() => {
-      renderTemplate(previewCanvasRef.current, 1200, 630, template, content, productImg, logoImg, customBgImg, { palette: design.palette, typography: design.typography });
+      renderTemplate(previewCanvasRef.current, 1200, 630, template, content, productImg, logoImg, customBgImg, { palette: design.palette, typography: design.typography, fullDesignImg });
     });
-  }, [template, content, productImg, logoImg, customBgImg, design.palette, design.typography]);
+  }, [template, content, productImg, logoImg, customBgImg, fullDesignImg, design.palette, design.typography]);
 
   const handleProductImage = async (e) => {
     const f = e.target.files[0];
@@ -1542,7 +1555,7 @@ function App() {
     for (let i = 0; i < selectedSizesData.length; i++) {
       const s = selectedSizesData[i];
       setProgressLabel(`輸出 ${s.label} (${s.w}×${s.h})…`);
-      await renderTemplate(offCanvas, s.w, s.h, template, content, productImg, logoImg, customBgImg, { palette: design.palette, typography: design.typography });
+      await renderTemplate(offCanvas, s.w, s.h, template, content, productImg, logoImg, customBgImg, { palette: design.palette, typography: design.typography, fullDesignImg });
       const blob = await new Promise(res => offCanvas.toBlob(res, 'image/png'));
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -1592,10 +1605,20 @@ function App() {
           <div className="toolbar">
             <span className="ratio-pill">即時預覽 · {template.emoji} {template.name}</span>
             <span style={{ fontSize: 12, color: '#666' }}>1200×630（標準分享圖）</span>
+            {fullDesignImg && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg, #d946ef, #f472b6)', padding: '4px 10px', borderRadius: 999 }}>
+                🎨 AI Hero 模式（套用所有尺寸）
+              </span>
+            )}
           </div>
           <div className="preview-canvas-wrap">
             <canvas ref={previewCanvasRef} />
           </div>
+          {fullDesignImg && (
+            <div style={{ marginTop: 8, fontSize: 11, color: '#86198f', background: '#fce7f3', padding: '8px 10px', borderRadius: 8, lineHeight: 1.6 }}>
+              💡 目前所有尺寸都使用 AI Hero 為主圖（依比例自動裁切）。要回到模板模式：美編面板 → AI 完整設計 → 「✕ 清除」
+            </div>
+          )}
         </div>
 
         {selectedSizesData.length > 0 && (
@@ -1609,7 +1632,7 @@ function App() {
               productImg={productImg}
               logoImg={logoImg}
               customBgImg={customBgImg}
-              overrides={{ palette: design.palette, typography: design.typography }}
+              overrides={{ palette: design.palette, typography: design.typography, fullDesignImg }}
             />
           </div>
         )}
