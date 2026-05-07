@@ -67,7 +67,7 @@
   .size-group { margin-top: 6px; }
   .size-group-title { font-size: 11px; color: #777; font-weight: 700; padding: 4px 0; }
   .preview-card { background: #fff; padding: 16px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); margin-bottom: 16px; width: 100%; max-width: 760px; }
-  .preview-canvas-wrap { max-width: 720px; aspect-ratio: 1200/630; background: #ddd; border-radius: 12px; overflow: hidden; }
+  .preview-canvas-wrap { max-width: 720px; aspect-ratio: 1200/630; background: #ddd; overflow: hidden; }
   .preview-canvas-wrap canvas { width: 100%; height: 100%; display: block; }
   .ratio-pill { background: #1a1a1a; color: #fff; font-size: 11px; padding: 4px 10px; border-radius: 999px; font-weight: 700; }
   .role-tag { display: inline-block; font-size: 11px; padding: 3px 8px; border-radius: 999px; font-weight: 700; margin-right: 6px; }
@@ -82,7 +82,7 @@
   .stat-label { font-size: 11px; color: #666; }
   .toolbar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
   .multi-preview { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-top: 8px; align-items: start; }
-  .multi-preview-item { background: #f0f2f5; border-radius: 8px; overflow: hidden; }
+  .multi-preview-item { background: #f0f2f5; overflow: hidden; }
   .multi-preview-item canvas { width: 100%; display: block; }
   .multi-preview-label { padding: 4px 6px; font-size: 10px; color: #555; text-align: center; background: #fff; }
   @media (max-width: 1100px) { .app { grid-template-columns: 1fr; height: auto; } .panel { border-right: 0; border-bottom: 1px solid #e5e7eb; } }
@@ -749,6 +749,7 @@ async function generateAIFullDesign({ workerUrl, template, product, productImage
 
   // 品質與輸出
   promptParts.push('Style: professional 8k commercial photography, ultra-sharp, high contrast, magazine-quality composition. The provided product should be placed naturally with realistic shadows and ambient lighting matching the background scene.');
+  promptParts.push('IMPORTANT: Full-bleed rectangular banner with SQUARE/sharp corners (no rounded corners, no border, no frame, no padding around the design). The design must extend edge-to-edge.');
 
   const prompt = promptParts.join(' ');
 
@@ -2265,7 +2266,7 @@ function DesignPanel({ design, setDesign, template, filterCategory, setFilterCat
             <img
               src={design.fullDesign}
               alt="AI Hero Design"
-              style={{ width: '100%', borderRadius: 8, border: '1px solid #e2e8f0' }}
+              style={{ width: '100%', border: '1px solid #e2e8f0' }}
             />
             <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
               <a
