@@ -1637,7 +1637,7 @@ function App() {
     document.fonts.ready.then(() => {
       renderTemplate(previewCanvasRef.current, 1200, 630, template, content, productImg, logoImg, customBgImg, { palette: design.palette, typography: design.typography, fullDesignImg, sceneComposeImg });
     });
-  }, [template, content, productImg, logoImg, customBgImg, fullDesignImg, design.palette, design.typography]);
+  }, [template, content, productImg, logoImg, customBgImg, fullDesignImg, sceneComposeImg, design.palette, design.typography]);
 
   const handleProductImage = async (e) => {
     const f = e.target.files[0];
