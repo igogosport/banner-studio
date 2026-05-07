@@ -1478,7 +1478,7 @@ function App() {
           <div className={`tab ${tab==='design'?'active':''}`} onClick={() => setTab('design')}>🎨 美編</div>
         </div>
 
-        {tab === 'shop' && <ShopPanel product={product} setProduct={setProduct} onImage={handleProductImage} />}
+        {tab === 'shop' && <ShopPanel product={product} setProduct={setProduct} />}
         {tab === 'market' && <MarketPanel marketing={marketing} setMarketing={setMarketing} />}
         {tab === 'design' && <DesignPanel
           design={design}
@@ -1488,6 +1488,9 @@ function App() {
           setFilterCategory={setFilterCategory}
           onBg={handleBgImage}
           onLogo={handleLogoImage}
+          onProductImage={handleProductImage}
+          product={product}
+          setProduct={setProduct}
           productImg={productImg}
           productName={product.name}
         />}
@@ -1583,7 +1586,7 @@ function App() {
 /* ============================================================
    Shop Panel
    ============================================================ */
-function ShopPanel({ product, setProduct, onImage }) {
+function ShopPanel({ product, setProduct }) {
   const set = (k, v) => setProduct(p => ({ ...p, [k]: v }));
   const toggleSize = (key) => {
     setProduct(p => ({
@@ -1639,10 +1642,6 @@ function ShopPanel({ product, setProduct, onImage }) {
       <input type="text" value={product.badge} onChange={e => set('badge', e.target.value)} placeholder="留空使用模板預設" />
       <label>CTA 按鈕（選填，預設用模板的）</label>
       <input type="text" value={product.cta} onChange={e => set('cta', e.target.value)} placeholder="例：立即搶購 →" />
-      <label>商品圖片</label>
-      <input type="file" accept="image/*" onChange={onImage} />
-      {product.image && <img src={product.image} alt="" style={{ width: '100%', marginTop: 8, borderRadius: 8 }} />}
-
       <h2>🛒 通路尺寸</h2>
       <div style={{ fontSize: 11, color: '#888', marginBottom: 8 }}>各電商平台規定的精確尺寸</div>
       <div style={{ display: 'flex', gap: 6, marginBottom: 8, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -1734,7 +1733,7 @@ function MarketPanel({ marketing, setMarketing }) {
 /* ============================================================
    Design Panel — 模板選擇 + 顏色字型覆寫
    ============================================================ */
-function DesignPanel({ design, setDesign, template, filterCategory, setFilterCategory, onBg, onLogo, productImg, productName }) {
+function DesignPanel({ design, setDesign, template, filterCategory, setFilterCategory, onBg, onLogo, onProductImage, product, setProduct, productImg, productName }) {
   const filtered = useMemo(() =>
     filterCategory === '全部' ? TEMPLATES : TEMPLATES.filter(t => t.category === filterCategory),
     [filterCategory]
@@ -2077,6 +2076,18 @@ function DesignPanel({ design, setDesign, template, filterCategory, setFilterCat
         <button className="btn btn-secondary" style={{ padding: 6, fontSize: 12, marginTop: 6 }} onClick={() => setDesign(d => ({ ...d, customBg: null }))}>
           清除自訂背景（回到模板原始漸層）
         </button>
+      )}
+
+      <h2>📦 商品圖片</h2>
+      <div style={{ fontSize: 11, color: '#888', marginBottom: 4, lineHeight: 1.6 }}>
+        建議透明 PNG（去背），會自動套用發光、陰影、地面投影等效果。
+      </div>
+      <input type="file" accept="image/*" onChange={onProductImage} />
+      {product.image && (
+        <>
+          <img src={product.image} alt="" style={{ width: '100%', marginTop: 8, borderRadius: 8, background: 'repeating-conic-gradient(#e5e7eb 0% 25%, #fff 0% 50%) 50% / 16px 16px', padding: 4 }} />
+          <button className="btn btn-secondary" style={{ padding: 6, fontSize: 12, marginTop: 4 }} onClick={() => setProduct(p => ({ ...p, image: null }))}>移除商品圖</button>
+        </>
       )}
 
       <h2>🔖 品牌 Logo</h2>
