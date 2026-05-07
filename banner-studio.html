@@ -758,11 +758,15 @@ async function generateAIFullDesign({ workerUrl, template, product, productImage
   promptParts.push('• The artwork must extend completely to all four edges of the image with sharp pixel-aligned corners.');
   promptParts.push('• Imagine you are designing a full-screen webpage hero (NOT a card, NOT a modal, NOT a Polaroid).');
 
-  // ⚠️ 繁體中文強化指令
-  promptParts.push('CRITICAL LANGUAGE CONSTRAINT:');
-  promptParts.push('• ALL Chinese text MUST be in Traditional Chinese characters (繁體中文 / 正體中文), as used in Taiwan and Hong Kong.');
-  promptParts.push('• DO NOT use Simplified Chinese (简体中文). Examples: use 無線 (not 无线), 藍牙 (not 蓝牙), 限時搶購 (not 限时抢购), 主動降噪 (not 主动降噪), 長效續航 (not 长效续航), 30小時 (not 30小时).');
-  promptParts.push('• Spell every Chinese character exactly as written in the prompt above. Do not change, simplify, or substitute characters.');
+  // ⚠️ 繁體中文強化指令（多重示範）
+  promptParts.push('CRITICAL LANGUAGE CONSTRAINT — TRADITIONAL CHINESE ONLY:');
+  promptParts.push('• ALL Chinese text MUST be Traditional Chinese (繁體中文 / 正體中文 / Taiwan & Hong Kong style).');
+  promptParts.push('• ABSOLUTELY DO NOT use Simplified Chinese (简体 / 簡體) under any circumstances.');
+  promptParts.push('• Required character mappings (use the LEFT form, never the right):');
+  promptParts.push('  限 (NOT 限), 時 (NOT 时), 搶 (NOT 抢), 購 (NOT 购), 無 (NOT 无), 線 (NOT 线), 藍 (NOT 蓝), 牙 (NOT 牙), 機 (NOT 机), 動 (NOT 动), 長 (NOT 长), 續 (NOT 续), 航 (NOT 航), 點 (NOT 点), 擊 (NOT 击), 標 (NOT 标), 題 (NOT 题), 樣 (NOT 样), 觀 (NOT 观), 賞 (NOT 赏), 華 (NOT 华), 發 (NOT 发), 響 (NOT 响), 聲 (NOT 声).');
+  promptParts.push('• Use these RADICALS: 門 (gate, not 门), 言 (speech, not 讠), 食 (food, not 饣), 馬 (horse, not 马), 車 (vehicle, not 车), 飛 (fly, not 飞), 龍 (dragon, not 龙), 鳥 (bird, not 鸟), 魚 (fish, not 鱼).');
+  promptParts.push('• Spell every Chinese character EXACTLY as written in the text overlays section above. Visualize the character as it would appear in Taiwan textbooks.');
+  promptParts.push('• If you find yourself defaulting to Simplified Chinese, STOP and write the Traditional form instead.');
 
   const prompt = promptParts.join(' ');
 
@@ -1328,22 +1332,28 @@ async function renderTemplate(canvas, w, h, template, content, productImg, logoI
   const typo = { ...template.typography, ...(overrides.typography || {}) };
   const base = Math.min(w, h); // typography baseline
 
-  // === Hero 完整設計模式：只在目標比例接近 Hero 時直接 cover-fit ===
+  // === Hero 完整設計模式：智慧裁切判定 ===
+  // 由於 Hero 通常是「左文字 / 右商品」的構圖：
+  //   - 目標比 Hero 寬：cover-fit 切上下，不影響左右文字 → 容忍範圍大 (×2.0)
+  //   - 目標比 Hero 窄：cover-fit 切左右，會切掉文字 → 容忍範圍小 (×1.2)
   const fullDesignImg = overrides.fullDesignImg;
   if (fullDesignImg) {
     const heroAspect = fullDesignImg.width / fullDesignImg.height;
     const targetAspect = w / h;
-    // 比例差距在 ±35% 內（即目標 aspect 在 0.65*hero ~ 1.5*hero 之間）→ 用 Hero
-    // 否則回到模板模式（避免極端裁切破壞構圖）
-    const ratioDiff = Math.abs(targetAspect / heroAspect - 1);
-    const useHero = ratioDiff <= 0.5; // 容忍 50% 比例差
+    let useHero;
+    if (targetAspect >= heroAspect) {
+      // 目標較寬：上下切（OK，不影響文字）
+      useHero = (targetAspect / heroAspect) <= 2.0;
+    } else {
+      // 目標較窄：左右切（會切掉文字），嚴格只容忍 20%
+      useHero = (heroAspect / targetAspect) <= 1.2;
+    }
     if (useHero) {
-      // 微微放大 3% — 把 AI 可能畫出的圓角邊緣推出畫面，確保直角全幅
       const inflate = 0.03;
       drawImageCover(ctx, fullDesignImg, -w * inflate, -h * inflate, w * (1 + 2 * inflate), h * (1 + 2 * inflate));
       return;
     }
-    // 比例差太多 → fall through 到模板渲染（會用 customBg 或漸層 + Canvas 文字）
+    // 比例差太多 → 完全不用 Hero（避免 AI 文字+Canvas 文字重疊），改用模板正常渲染
   }
 
   // === 背景層 ===
