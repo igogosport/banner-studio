@@ -663,16 +663,25 @@ const DEFAULT_WORKER_URL = 'https://banner-ai.dougla999.workers.dev';
 // USD → TWD 匯率（估算，可調整）
 const USD_TO_TWD = 32;
 
-// 各 provider 每張費用（依 1792×1024 banner 標準尺寸計算）
-function estimateCostPerImage(provider, quality = 'standard') {
+// 各 provider 每張費用（依寬版 banner 計算，gpt-image-1 用 1536×1024，dall-e-3 用 1792×1024）
+function estimateCostPerImage(provider, quality = 'standard', model = 'dall-e-3') {
   if (provider === 'pollinations') return { usd: 0, twd: 0, label: '免費' };
-  // DALL-E 3 1792×1024
-  const usd = quality === 'hd' ? 0.12 : 0.08;
-  const twd = Math.round(usd * USD_TO_TWD * 10) / 10; // 保留一位小數
+  let usd;
+  if (model === 'gpt-image-1') {
+    // 1536×1024 寬版
+    if (quality === 'hd' || quality === 'high') usd = 0.250;
+    else if (quality === 'standard' || quality === 'medium') usd = 0.063;
+    else if (quality === 'low') usd = 0.016;
+    else usd = 0.063;
+  } else {
+    // dall-e-3 1792×1024
+    usd = quality === 'hd' ? 0.12 : 0.08;
+  }
+  const twd = Math.round(usd * USD_TO_TWD * 10) / 10;
   return { usd, twd, label: `約 NT$ ${twd} / 張` };
 }
 async function generateAIBackground(template, productType, w = 1280, h = 720, opts = {}) {
-  const { provider = 'pollinations', workerUrl, quality = 'standard', style = 'vivid' } = opts;
+  const { provider = 'pollinations', workerUrl, quality = 'standard', style = 'vivid', model = 'dall-e-3' } = opts;
   const productHint = productType ? `, designed for ${productType} promotion` : '';
   const prompt = `${template.aiPrompt}${productHint}, banner background only, empty composition, no products, no text, no logos, no watermarks`;
 
@@ -681,16 +690,19 @@ async function generateAIBackground(template, productType, w = 1280, h = 720, op
     const res = await fetch(workerUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, width: w, height: h, quality, style }),
+      body: JSON.stringify({ prompt, width: w, height: h, quality, style, model }),
     });
     if (!res.ok) {
       let errMsg = `Worker 回傳錯誤 (HTTP ${res.status})`;
-      try { const j = await res.json(); if (j.error) errMsg = j.error + (j.detail ? `\n${j.detail}` : ''); } catch {}
+      try {
+        const j = await res.json();
+        if (j.error) errMsg = j.error + (j.hint ? `\n\n💡 ${j.hint}` : (j.detail ? `\n${j.detail.substring(0, 200)}` : ''));
+      } catch {}
       throw new Error(errMsg);
     }
     const data = await res.json();
     if (!data.image) throw new Error('Worker 沒有回傳 image 欄位');
-    return data.image; // data:image/png;base64,...
+    return data.image;
   }
 
   // Pollinations 預設
@@ -1736,14 +1748,16 @@ function DesignPanel({ design, setDesign, template, filterCategory, setFilterCat
   const [aiProvider, setAiProvider] = useState(() => localStorage.getItem('bs_ai_provider') || 'openai');
   const [workerUrl, setWorkerUrl] = useState(() => localStorage.getItem('bs_worker_url') || DEFAULT_WORKER_URL);
   const [showWorkerOverride, setShowWorkerOverride] = useState(false);
-  const [aiQuality, setAiQuality] = useState(() => localStorage.getItem('bs_ai_quality') || 'standard');
+  const [aiQuality, setAiQuality] = useState(() => localStorage.getItem('bs_ai_quality') || 'hd');
   const [aiStyle, setAiStyle] = useState(() => localStorage.getItem('bs_ai_style') || 'vivid');
+  const [aiModel, setAiModel] = useState(() => localStorage.getItem('bs_ai_model') || 'dall-e-3');
 
   // 持久化設定
   useEffect(() => { localStorage.setItem('bs_ai_provider', aiProvider); }, [aiProvider]);
   useEffect(() => { localStorage.setItem('bs_worker_url', workerUrl); }, [workerUrl]);
   useEffect(() => { localStorage.setItem('bs_ai_quality', aiQuality); }, [aiQuality]);
   useEffect(() => { localStorage.setItem('bs_ai_style', aiStyle); }, [aiStyle]);
+  useEffect(() => { localStorage.setItem('bs_ai_model', aiModel); }, [aiModel]);
 
   const setColor = (k, v) => setDesign(d => ({ ...d, palette: { ...d.palette, [k]: v } }));
   const resetColors = () => setDesign(d => ({ ...d, palette: {} }));
@@ -1761,6 +1775,7 @@ function DesignPanel({ design, setDesign, template, filterCategory, setFilterCat
         workerUrl: workerUrl.trim(),
         quality: aiQuality,
         style: aiStyle,
+        model: aiModel,
       });
       setDesign(d => ({ ...d, customBg: dataUrl }));
     } catch (err) {
@@ -1902,46 +1917,59 @@ function DesignPanel({ design, setDesign, template, filterCategory, setFilterCat
         </div>
       </div>
 
-      {/* 費用提示 */}
+      {/* 費用 + 工作流程說明 */}
       {(() => {
-        const cost = estimateCostPerImage(aiProvider, aiQuality);
+        const cost = estimateCostPerImage(aiProvider, aiQuality, aiModel);
         const isFree = cost.usd === 0;
+        const modelLabel = aiProvider === 'pollinations' ? 'Pollinations Flux' :
+                          aiModel === 'gpt-image-1'
+                            ? `GPT Image 1 (${aiQuality})`
+                            : `DALL-E 3 ${aiQuality === 'hd' ? 'HD' : 'Standard'}`;
         return (
-          <div style={{
-            background: isFree ? '#dcfce7' : '#fef3c7',
-            border: `1px solid ${isFree ? '#86efac' : '#fcd34d'}`,
-            padding: '10px 12px', borderRadius: 8, marginBottom: 10,
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          }}>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: isFree ? '#15803d' : '#92400e' }}>
-                💰 每張費用：{cost.label}
-              </div>
-              <div style={{ fontSize: 10, color: isFree ? '#166534' : '#78350f', marginTop: 2 }}>
-                {isFree
-                  ? 'Pollinations 免費版，品質約 7/10'
-                  : `DALL-E 3 ${aiQuality === 'hd' ? 'HD' : 'Standard'}，品質 ${aiQuality === 'hd' ? '10/10' : '9/10'}`}
+          <>
+            <div style={{
+              background: isFree ? '#dcfce7' : 'linear-gradient(135deg, #fef3c7, #fde68a)',
+              border: `1px solid ${isFree ? '#86efac' : '#fbbf24'}`,
+              padding: '12px 14px', borderRadius: 10, marginBottom: 8,
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 900, color: isFree ? '#15803d' : '#78350f' }}>
+                    💎 {modelLabel}
+                  </div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: isFree ? '#166534' : '#92400e', marginTop: 2 }}>
+                    💰 {cost.label}（一張主視覺 → 套用於所有勾選尺寸）
+                  </div>
+                </div>
+                {aiProvider === 'openai' && (
+                  <select
+                    value={aiQuality}
+                    onChange={e => setAiQuality(e.target.value)}
+                    style={{ fontSize: 11, width: 'auto', padding: '6px 8px', fontWeight: 700 }}
+                  >
+                    {aiModel === 'gpt-image-1' ? (
+                      <>
+                        <option value="low">Low（最便宜）</option>
+                        <option value="medium">Medium（平衡）</option>
+                        <option value="high">High（最高品質）</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="standard">Standard</option>
+                        <option value="hd">HD（推薦）</option>
+                      </>
+                    )}
+                  </select>
+                )}
               </div>
             </div>
-            {!isFree && (
-              <select
-                value={aiQuality}
-                onChange={e => setAiQuality(e.target.value)}
-                style={{ fontSize: 11, width: 'auto', padding: '4px 6px' }}
-              >
-                <option value="standard">Standard</option>
-                <option value="hd">HD</option>
-              </select>
-            )}
-          </div>
+            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', padding: '8px 10px', borderRadius: 6, marginBottom: 10, fontSize: 11, color: '#1e40af', lineHeight: 1.6 }}>
+              <b>🎯 工作流程：</b>AI 生成 1 張 1792×1024 主視覺背景 → 系統自動 cover-fit 套到所有尺寸（同比例完美裁切，不同比例自動微調字型）→ 文字 / 商品 / Logo 由 Canvas 疊加在最上層。<br />
+              <b style={{ marginTop: 4, display: 'inline-block' }}>👍 這代表：你只付一張 AI 的錢，可以輸出全部 50 個尺寸。</b>
+            </div>
+          </>
         );
       })()}
-
-      <div style={{ fontSize: 11, color: '#888', marginBottom: 6, lineHeight: 1.6 }}>
-        {aiProvider === 'pollinations'
-          ? '使用 Pollinations.ai (Flux 模型 · 免費 · 商用 OK)。文字/商品/Logo 由系統疊加。'
-          : '使用 OpenAI DALL-E 3 商業級畫質。文字/商品/Logo 由系統疊加。'}
-      </div>
       <label>商品類型（讓 AI 更精準）</label>
       <input
         type="text"
@@ -1970,13 +1998,13 @@ function DesignPanel({ design, setDesign, template, filterCategory, setFilterCat
       )}
       <button
         className="btn"
-        style={{ marginTop: 8, background: aiGenerating ? '#888' : 'linear-gradient(135deg, #ec4899, #8b5cf6)' }}
+        style={{ marginTop: 8, background: aiGenerating ? '#888' : 'linear-gradient(135deg, #ec4899, #8b5cf6)', fontSize: 14, padding: 14 }}
         onClick={handleGenerateAI}
         disabled={aiGenerating || (aiProvider === 'openai' && !workerUrl.trim())}
       >
         {aiGenerating
-          ? (aiProvider === 'openai' ? '🎨 DALL-E 3 生成中…(約 10-30 秒)' : '🌸 Pollinations 生成中…(約 5-25 秒)')
-          : `🤖 用 ${aiProvider === 'openai' ? 'DALL-E 3' : 'Pollinations'} 生成背景`}
+          ? `🎨 AI 生成主視覺中…(${aiProvider === 'openai' ? '10-30' : '5-25'} 秒)`
+          : `🤖 生成 AI 主視覺（${aiProvider === 'openai' ? (aiModel === 'gpt-image-1' ? 'GPT Image 1' : 'DALL-E 3') : 'Pollinations'}）`}
       </button>
       {aiError && (
         <div style={{ fontSize: 11, color: '#dc2626', marginTop: 6, whiteSpace: 'pre-wrap' }}>⚠️ {aiError}</div>
@@ -1997,7 +2025,18 @@ function DesignPanel({ design, setDesign, template, filterCategory, setFilterCat
         <details style={{ marginTop: 10, fontSize: 11, background: '#f8fafc', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0' }}>
           <summary style={{ cursor: 'pointer', fontWeight: 700, color: '#475569' }}>⚙️ 進階設定（管理員用）</summary>
           <div style={{ marginTop: 8 }}>
-            <label style={{ fontSize: 10, marginTop: 0 }}>Cloudflare Worker URL（預設已內建）</label>
+            <label style={{ fontSize: 10, marginTop: 0 }}>AI 模型</label>
+            <select value={aiModel} onChange={e => setAiModel(e.target.value)} style={{ fontSize: 11 }}>
+              <option value="dall-e-3">DALL-E 3（無需 verification）</option>
+              <option value="gpt-image-1">GPT Image 1（最強，需 Org Verification）</option>
+            </select>
+            {aiModel === 'gpt-image-1' && (
+              <div style={{ fontSize: 10, color: '#dc2626', marginTop: 4, lineHeight: 1.6 }}>
+                ⚠️ GPT Image 1 需要先到 <a href="https://platform.openai.com/settings/organization/general" target="_blank" rel="noopener" style={{ color: '#0369a1' }}>OpenAI Organization 申請 Verification</a>。如果生成失敗看到 "verified"，就是這個原因。
+              </div>
+            )}
+
+            <label style={{ fontSize: 10, marginTop: 8 }}>Cloudflare Worker URL（預設已內建）</label>
             <input
               type="text"
               value={workerUrl}
@@ -2013,15 +2052,19 @@ function DesignPanel({ design, setDesign, template, filterCategory, setFilterCat
               ↺ 還原預設 Worker
             </button>
 
-            <label style={{ fontSize: 10, marginTop: 8 }}>圖像風格</label>
-            <select value={aiStyle} onChange={e => setAiStyle(e.target.value)} style={{ fontSize: 11 }}>
-              <option value="vivid">Vivid（鮮豔戲劇感）</option>
-              <option value="natural">Natural（自然真實）</option>
-            </select>
+            {aiModel === 'dall-e-3' && (
+              <>
+                <label style={{ fontSize: 10, marginTop: 8 }}>圖像風格（僅 DALL-E 3）</label>
+                <select value={aiStyle} onChange={e => setAiStyle(e.target.value)} style={{ fontSize: 11 }}>
+                  <option value="vivid">Vivid（鮮豔戲劇感）</option>
+                  <option value="natural">Natural（自然真實）</option>
+                </select>
+              </>
+            )}
 
             <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 8, lineHeight: 1.6 }}>
               費用估算：1 USD ≈ NT$ {USD_TO_TWD}<br />
-              欲更換 Worker 或 OpenAI 帳號，請聯絡管理員。
+              <b>升級 Worker</b>：管理員可從 GitHub repo 下載最新 worker.js 貼到 Cloudflare。
             </div>
           </div>
         </details>

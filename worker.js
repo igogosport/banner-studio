@@ -1,8 +1,9 @@
 /**
  * Cloudflare Worker — Banner Studio AI Image Proxy
  *
- * 功能：接收前端傳來的 prompt，呼叫 OpenAI DALL-E 3 生成圖片，
- *      回傳 base64 圖片給前端（避免 CORS 與金鑰外洩）。
+ * 支援兩種模型：
+ *   - dall-e-3       (預設，無需 verification)
+ *   - gpt-image-1    (最強，需 OpenAI Organization Verification)
  *
  * 部署步驟：
  *   1. 到 https://dash.cloudflare.com/ 登入
@@ -10,18 +11,18 @@
  *   3. 部署後點該 Worker → "Edit Code"
  *   4. 把整個檔案內容貼進去，Save & Deploy
  *   5. 回到 Worker 設定頁 → Settings → Variables → Add variable
- *      Name: OPENAI_KEY  /  Value: sk-...（你的 OpenAI key）
- *      勾選 "Encrypt" → Save
+ *      Name: OPENAI_KEY  /  Type: Secret  /  Value: sk-...（你的 OpenAI key）→ Save
  *   6. 複製 Worker 網址（類似 https://banner-ai.your-name.workers.dev）
- *   7. 回到 banner-studio 美編面板貼上該網址
  *
- * 費用：
- *   - Cloudflare Worker：免費版每天 10 萬次請求
- *   - OpenAI DALL-E 3：
- *     - 1024×1024 standard $0.040 / HD $0.080
- *     - 1792×1024 standard $0.080 / HD $0.120
- *     - 1024×1792 standard $0.080 / HD $0.120
- *   - 一張 banner 約 $0.04～$0.12（NT$ 1.3～4 元）
+ * 費用（每張）：
+ *   DALL-E 3:
+ *     1024×1024 standard $0.040 / HD $0.080
+ *     1792×1024 standard $0.080 / HD $0.120
+ *     1024×1792 standard $0.080 / HD $0.120
+ *   GPT-Image-1:
+ *     1024×1024 low $0.011 / medium $0.042 / high $0.167
+ *     1536×1024 low $0.016 / medium $0.063 / high $0.250
+ *     1024×1536 low $0.016 / medium $0.063 / high $0.250
  */
 
 const CORS_HEADERS = {
@@ -31,42 +32,49 @@ const CORS_HEADERS = {
   'Access-Control-Max-Age': '86400',
 };
 
-// DALL-E 3 只支援這三種尺寸，依照寬高比自動選擇最接近的
-function pickDalleSize(w, h) {
+// 依寬高比挑選最接近的支援尺寸
+function pickSize(w, h, model) {
   const ratio = w / h;
-  if (ratio >= 1.3) return '1792x1024'; // 寬版
-  if (ratio <= 0.75) return '1024x1792'; // 高版
-  return '1024x1024'; // 方形 / 接近方形
+  if (model === 'gpt-image-1') {
+    if (ratio >= 1.3) return '1536x1024';
+    if (ratio <= 0.75) return '1024x1536';
+    return '1024x1024';
+  }
+  // dall-e-3
+  if (ratio >= 1.3) return '1792x1024';
+  if (ratio <= 0.75) return '1024x1792';
+  return '1024x1024';
+}
+
+// 把 banner-studio 的 quality 對應到模型支援的值
+function normalizeQuality(model, quality) {
+  if (model === 'gpt-image-1') {
+    // 'standard' → 'medium', 'hd' → 'high', 'low' → 'low'
+    if (quality === 'standard') return 'medium';
+    if (quality === 'hd') return 'high';
+    if (['low', 'medium', 'high', 'auto'].includes(quality)) return quality;
+    return 'medium';
+  }
+  // dall-e-3 only supports 'standard' or 'hd'
+  return quality === 'hd' ? 'hd' : 'standard';
 }
 
 export default {
   async fetch(request, env) {
-    // CORS preflight
-    if (request.method === 'OPTIONS') {
-      return new Response(null, { headers: CORS_HEADERS });
-    }
-
-    if (request.method !== 'POST') {
-      return json({ error: 'Method not allowed. Use POST.' }, 405);
-    }
-
-    if (!env.OPENAI_KEY) {
-      return json({ error: '伺服器未設定 OPENAI_KEY 環境變數' }, 500);
-    }
+    if (request.method === 'OPTIONS') return new Response(null, { headers: CORS_HEADERS });
+    if (request.method !== 'POST') return json({ error: 'Method not allowed. Use POST.' }, 405);
+    if (!env.OPENAI_KEY) return json({ error: '伺服器未設定 OPENAI_KEY 環境變數' }, 500);
 
     let body;
-    try {
-      body = await request.json();
-    } catch (e) {
-      return json({ error: 'Invalid JSON body' }, 400);
-    }
+    try { body = await request.json(); }
+    catch (e) { return json({ error: 'Invalid JSON body' }, 400); }
 
     const {
       prompt,
       width = 1792,
       height = 1024,
-      quality = 'standard', // 'standard' or 'hd'
-      style = 'vivid',       // 'vivid' or 'natural'
+      quality = 'standard',
+      style = 'vivid',
       model = 'dall-e-3',
     } = body;
 
@@ -74,7 +82,23 @@ export default {
       return json({ error: 'prompt 欄位必填' }, 400);
     }
 
-    const size = pickDalleSize(width, height);
+    const size = pickSize(width, height, model);
+    const normalizedQuality = normalizeQuality(model, quality);
+
+    const payload = {
+      model,
+      prompt,
+      size,
+      quality: normalizedQuality,
+      n: 1,
+    };
+
+    // dall-e-3 才有 style 與 response_format 參數
+    if (model === 'dall-e-3') {
+      payload.style = style;
+      payload.response_format = 'b64_json';
+    }
+    // gpt-image-1 預設就回 b64_json，不能加 response_format
 
     try {
       const aiRes = await fetch('https://api.openai.com/v1/images/generations', {
@@ -83,33 +107,31 @@ export default {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${env.OPENAI_KEY}`,
         },
-        body: JSON.stringify({
-          model,
-          prompt,
-          size,
-          quality,
-          style,
-          n: 1,
-          response_format: 'b64_json',
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!aiRes.ok) {
         const errText = await aiRes.text();
-        return json({ error: `OpenAI 回傳錯誤 (${aiRes.status})`, detail: errText }, aiRes.status);
+        return json({
+          error: `OpenAI 回傳錯誤 (${aiRes.status})`,
+          detail: errText,
+          hint: errText.includes('verified')
+            ? '此模型需要 Organization Verification。請到 https://platform.openai.com/settings/organization/general 申請驗證。'
+            : null,
+        }, aiRes.status);
       }
 
       const data = await aiRes.json();
       const b64 = data.data?.[0]?.b64_json;
       const revisedPrompt = data.data?.[0]?.revised_prompt;
 
-      if (!b64) {
-        return json({ error: 'OpenAI 沒有回傳圖片' }, 500);
-      }
+      if (!b64) return json({ error: 'OpenAI 沒有回傳圖片', detail: JSON.stringify(data) }, 500);
 
       return json({
         image: `data:image/png;base64,${b64}`,
         actualSize: size,
+        actualQuality: normalizedQuality,
+        actualModel: model,
         revisedPrompt,
       });
     } catch (e) {
