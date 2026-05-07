@@ -238,6 +238,7 @@ const TEMPLATES = [
       productGlow: '#00d4ff',
     },
     typography: { titleFont: 'Anton', priceFont: 'Anton', subFont: 'Noto Sans TC' },
+    aiPrompt: 'Premium product photography backdrop, deep navy blue with cyan rim lighting, glossy reflective dark surface with blue ambient glow, atmospheric volumetric light rays, minimalist tech aesthetic, no objects, no text, professional 8k commercial banner photography',
     defaults: { badge: '⚡ 限時搶購', cta: '立即搶購 →' },
   },
   {
@@ -260,6 +261,7 @@ const TEMPLATES = [
       productGlow: '#d4af37',
     },
     typography: { titleFont: 'Playfair Display', priceFont: 'Playfair Display', subFont: 'Noto Serif TC' },
+    aiPrompt: 'Luxury product photography backdrop, deep black background with warm golden ambient lighting, dark velvet texture, dramatic spotlight from above, premium sophisticated atmosphere, marble or silk surface, no objects, no text, professional 8k commercial banner photography',
     defaults: { badge: '★ 精選典藏', cta: '立即典藏 →' },
   },
   {
@@ -285,6 +287,7 @@ const TEMPLATES = [
       titleGlow: '#ff006e',
     },
     typography: { titleFont: 'Bebas Neue', priceFont: 'Bebas Neue', subFont: 'Oswald' },
+    aiPrompt: 'Cyberpunk gaming product backdrop, dark dramatic atmosphere with magenta and cyan neon lights, glitch effects, dystopian futuristic city blur, electric energy, neon signs out of focus, no objects, no text, professional 8k commercial banner photography',
     defaults: { badge: '🎮 GAME ON', cta: 'PLAY NOW →' },
   },
   {
@@ -307,6 +310,7 @@ const TEMPLATES = [
       productGlow: '#ffeb3b',
     },
     typography: { titleFont: 'Montserrat', priceFont: 'Anton', subFont: 'Noto Sans TC' },
+    aiPrompt: 'Vibrant energetic product backdrop, bright pink and orange sunset gradient, dynamic motion blur, soft bokeh light spots, joyful summer atmosphere, paint splash texture, no objects, no text, professional 8k commercial banner photography',
     defaults: { badge: '🔥 超值優惠', cta: '立即購買 →' },
   },
   {
@@ -330,6 +334,7 @@ const TEMPLATES = [
       productGlow: '#ffffff',
     },
     typography: { titleFont: 'Playfair Display', priceFont: 'Playfair Display', subFont: 'Noto Serif TC' },
+    aiPrompt: 'Beauty cosmetics product backdrop, soft pink and rose gold dreamy ambient lighting, satin silk fabric texture, romantic feminine atmosphere, blurred floral elements, marble surface with rose petals, no objects, no text, professional 8k commercial banner photography',
     defaults: { badge: '🌸 精選美妝', cta: '立即選購 →' },
   },
   {
@@ -352,6 +357,7 @@ const TEMPLATES = [
       productGlow: '#ffffff',
     },
     typography: { titleFont: 'Montserrat', priceFont: 'Anton', subFont: 'Noto Sans TC' },
+    aiPrompt: 'Wellness natural product backdrop, fresh mint green and white tones, natural soft daylight from window, organic botanical elements, eucalyptus leaves blurred, clean spa atmosphere, no objects, no text, professional 8k commercial banner photography',
     defaults: { badge: '🌿 天然優選', cta: '立即了解 →' },
   },
   {
@@ -375,6 +381,7 @@ const TEMPLATES = [
       productGlow: '#fff5e1',
     },
     typography: { titleFont: 'Bangers', priceFont: 'Anton', subFont: 'Noto Sans TC' },
+    aiPrompt: 'Food product photography backdrop, warm orange and golden hour lighting, rustic wooden surface, appetizing warm cozy atmosphere, soft shadows, blurred kitchen herbs in background, no objects, no text, professional 8k commercial banner photography',
     defaults: { badge: '🔥 熱銷', cta: '立刻嚐鮮 →' },
   },
   {
@@ -399,6 +406,7 @@ const TEMPLATES = [
       productGlow: '#ffd700',
     },
     typography: { titleFont: 'Playfair Display', priceFont: 'Anton', subFont: 'Noto Serif TC' },
+    aiPrompt: 'Festive product photography backdrop, deep red and gold luxurious ambiance, sparkle bokeh lights, christmas celebration atmosphere, satin ribbons, gold confetti blur, no objects, no text, professional 8k commercial banner photography',
     defaults: { badge: '✨ 節慶限定', cta: '立即把握 →' },
   },
   {
@@ -421,6 +429,7 @@ const TEMPLATES = [
       productGlow: '#fff8ee',
     },
     typography: { titleFont: 'Playfair Display', priceFont: 'Playfair Display', subFont: 'Noto Serif TC' },
+    aiPrompt: 'Home lifestyle product backdrop, warm beige cream and tan tones, natural linen fabric texture, cozy minimal Scandinavian atmosphere, soft window daylight, dried plants blur, no objects, no text, professional 8k commercial banner photography',
     defaults: { badge: '☕ 溫馨居家', cta: '了解更多 →' },
   },
   {
@@ -444,6 +453,7 @@ const TEMPLATES = [
       productGlow: '#fffacd',
     },
     typography: { titleFont: 'Bangers', priceFont: 'Anton', subFont: 'Noto Sans TC' },
+    aiPrompt: 'Playful kids product backdrop, soft pastel rainbow tones, cloudy blue sky with cotton candy clouds, whimsical cheerful atmosphere, balloons blurred, hand-drawn doodle elements, no objects, no text, professional 8k commercial banner photography',
     defaults: { badge: '🎈 童趣優選', cta: '立即發現 →' },
   },
 ];
@@ -467,6 +477,33 @@ const loadImage = (src) => new Promise((resolve, reject) => {
   img.onerror = reject;
   img.src = src;
 });
+
+/* ============================================================
+   AI BACKGROUND GENERATION
+   使用 Pollinations.ai (免費，無需 API Key，CORS 友善，Flux 模型)
+   ============================================================ */
+async function generateAIBackground(template, productType, w = 1280, h = 720, seed = null) {
+  const productHint = productType ? `, designed for ${productType} promotion` : '';
+  const prompt = `${template.aiPrompt}${productHint}, banner background only, empty composition, no products, no text, no logos, no watermarks`;
+  const seedParam = seed != null ? `&seed=${seed}` : `&seed=${Math.floor(Math.random() * 99999)}`;
+  // 限制最大邊不超過 1280 以加速生成
+  const ratio = w / h;
+  let gw = w, gh = h;
+  if (Math.max(gw, gh) > 1280) {
+    if (gw > gh) { gw = 1280; gh = Math.round(1280 / ratio); }
+    else { gh = 1280; gw = Math.round(1280 * ratio); }
+  }
+  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${gw}&height=${gh}&model=flux&nologo=true${seedParam}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`AI 生成失敗 (HTTP ${res.status})`);
+  const blob = await res.blob();
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -1225,6 +1262,7 @@ function App() {
           onBg={handleBgImage}
           onLogo={handleLogoImage}
           productImg={productImg}
+          productName={product.name}
         />}
       </div>
 
@@ -1469,14 +1507,37 @@ function MarketPanel({ marketing, setMarketing }) {
 /* ============================================================
    Design Panel — 模板選擇 + 顏色字型覆寫
    ============================================================ */
-function DesignPanel({ design, setDesign, template, filterCategory, setFilterCategory, onBg, onLogo, productImg }) {
+function DesignPanel({ design, setDesign, template, filterCategory, setFilterCategory, onBg, onLogo, productImg, productName }) {
   const filtered = useMemo(() =>
     filterCategory === '全部' ? TEMPLATES : TEMPLATES.filter(t => t.category === filterCategory),
     [filterCategory]
   );
 
+  const [aiProductType, setAiProductType] = useState('');
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiError, setAiError] = useState('');
+  const [aiPromptOverride, setAiPromptOverride] = useState('');
+  const [showAdvancedAI, setShowAdvancedAI] = useState(false);
+
   const setColor = (k, v) => setDesign(d => ({ ...d, palette: { ...d.palette, [k]: v } }));
   const resetColors = () => setDesign(d => ({ ...d, palette: {} }));
+
+  const handleGenerateAI = async () => {
+    setAiGenerating(true);
+    setAiError('');
+    try {
+      const promptedTemplate = aiPromptOverride
+        ? { ...template, aiPrompt: aiPromptOverride }
+        : template;
+      const productType = aiProductType || (productName ? productName : '');
+      const dataUrl = await generateAIBackground(promptedTemplate, productType, 1280, 720);
+      setDesign(d => ({ ...d, customBg: dataUrl }));
+    } catch (err) {
+      setAiError(err.message || 'AI 生成失敗，請稍後再試');
+    } finally {
+      setAiGenerating(false);
+    }
+  };
 
   // 取得實際使用的顏色（覆寫優先）
   const palette = { ...template.palette, ...design.palette };
@@ -1507,11 +1568,65 @@ function DesignPanel({ design, setDesign, template, filterCategory, setFilterCat
         ))}
       </div>
 
-      <h2>🖼 自訂底圖（覆蓋模板）</h2>
+      <h2>🤖 AI 生成攝影級背景</h2>
+      <div style={{ fontSize: 11, color: '#888', marginBottom: 6, lineHeight: 1.6 }}>
+        使用 Pollinations.ai (Flux 模型 · 免費 · 商用 OK) 依模板風格生成背景。文字/商品/Logo 由系統疊加，無需擔心 AI 寫字錯誤。
+      </div>
+      <label>商品類型（讓 AI 更精準）</label>
+      <input
+        type="text"
+        value={aiProductType}
+        onChange={e => setAiProductType(e.target.value)}
+        placeholder={`例：藍牙耳機、口紅、咖啡豆、小家電（留空用商品名「${productName}」）`}
+      />
+      <div style={{ marginTop: 6, marginBottom: 4 }}>
+        <span
+          onClick={() => setShowAdvancedAI(!showAdvancedAI)}
+          style={{ fontSize: 11, color: '#4f46e5', cursor: 'pointer', fontWeight: 600 }}
+        >
+          {showAdvancedAI ? '▼' : '▶'} 進階：覆寫 Prompt
+        </span>
+      </div>
+      {showAdvancedAI && (
+        <div>
+          <textarea
+            value={aiPromptOverride}
+            onChange={e => setAiPromptOverride(e.target.value)}
+            placeholder={`預設使用模板的 prompt：\n${template.aiPrompt}\n\n你可以完全覆寫成自己的 prompt（建議用英文，加 "no text, no products"）`}
+            rows={5}
+            style={{ fontSize: 11, fontFamily: 'monospace' }}
+          />
+        </div>
+      )}
+      <button
+        className="btn"
+        style={{ marginTop: 8, background: aiGenerating ? '#888' : 'linear-gradient(135deg, #ec4899, #8b5cf6)' }}
+        onClick={handleGenerateAI}
+        disabled={aiGenerating}
+      >
+        {aiGenerating ? '🎨 AI 生成中…(約 5-25 秒)' : '🤖 用 AI 生成符合風格的背景'}
+      </button>
+      {aiError && (
+        <div style={{ fontSize: 11, color: '#dc2626', marginTop: 6 }}>⚠️ {aiError}</div>
+      )}
+      {design.customBg && !aiGenerating && (
+        <div style={{ marginTop: 8, fontSize: 11, color: '#16a34a' }}>
+          ✓ 已套用自訂背景。
+          <span
+            onClick={handleGenerateAI}
+            style={{ marginLeft: 6, color: '#4f46e5', cursor: 'pointer', fontWeight: 600 }}
+          >
+            🔄 換一張
+          </span>
+        </div>
+      )}
+
+      <h2>🖼 自訂底圖（手動上傳）</h2>
+      <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>有自己的高質感攝影圖？直接上傳會覆蓋模板背景。</div>
       <input type="file" accept="image/*" onChange={onBg} />
       {design.customBg && (
         <button className="btn btn-secondary" style={{ padding: 6, fontSize: 12, marginTop: 6 }} onClick={() => setDesign(d => ({ ...d, customBg: null }))}>
-          清除自訂底圖
+          清除自訂背景（回到模板原始漸層）
         </button>
       )}
 
