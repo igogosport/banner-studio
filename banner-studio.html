@@ -680,6 +680,97 @@ function estimateCostPerImage(provider, quality = 'standard', model = 'dall-e-3'
   const twd = Math.round(usd * USD_TO_TWD * 10) / 10;
   return { usd, twd, label: `約 NT$ ${twd} / 張` };
 }
+/* 將 dataURL 轉成 Blob */
+function dataUrlToBlob(dataUrl) {
+  const [meta, base64] = dataUrl.split(',');
+  const mime = meta.match(/:(.*?);/)?.[1] || 'image/png';
+  const binary = atob(base64);
+  const arr = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+}
+
+/* 完整 AI 設計（含商品 + 文字）— 使用 GPT Image 1 image edits */
+async function generateAIFullDesign({ workerUrl, template, product, productImageDataUrl, w = 1536, h = 1024, quality = 'medium' }) {
+  if (!workerUrl) throw new Error('未設定 Worker URL');
+  if (!productImageDataUrl) throw new Error('請先上傳商品圖');
+  if (!template._brand && !template) throw new Error('未選擇模板');
+
+  const brand = template._brand;
+  const mood = template._mood;
+  const palette = template.palette;
+
+  // 組出完整設計指令
+  const promptParts = [];
+  promptParts.push('Design a complete commercial e-commerce promotional banner using the provided product image.');
+  if (brand) {
+    promptParts.push(`Brand style: ${brand.name} - ${brand.personality}.`);
+    promptParts.push(`Visual mood: ${mood.prompt}.`);
+    promptParts.push(`Brand keywords: ${brand.keywords}.`);
+    promptParts.push(`Avoid: ${brand.negative}.`);
+  } else {
+    promptParts.push(`Style: ${template.aiPrompt}`);
+  }
+
+  // 構圖規則
+  const layoutHints = {
+    'left-right': 'Composition: text content on the LEFT side (about 45%), product image on the RIGHT side (about 45%), with proper safe zone padding.',
+    'right-left': 'Composition: product image on the LEFT side (about 45%), text content on the RIGHT side (about 45%), with proper safe zone padding.',
+    'center-hero': 'Composition: product image centered in upper portion as hero, text content below center-aligned.',
+    'top-bottom': 'Composition: text content on top, product image on bottom centered.',
+  };
+  promptParts.push(layoutHints[template.layout] || layoutHints['left-right']);
+
+  // 文字內容
+  const textContent = [];
+  if (product.badge) textContent.push(`Top badge tag: "${product.badge}"`);
+  if (product.name) textContent.push(`Main title (large bold): "${product.name}"`);
+  if (product.subtitle) textContent.push(`Subtitle: "${product.subtitle}"`);
+  if (product.salePrice) {
+    let priceText = `Hero price (very large): "$${product.salePrice}"`;
+    if (product.originalPrice) priceText += ` with crossed-out original price "$${product.originalPrice}" smaller above`;
+    textContent.push(priceText);
+  }
+  if (product.startDate || product.endDate) {
+    const dateStr = (product.startDate && product.endDate)
+      ? `${product.startDate} ~ ${product.endDate}`
+      : (product.startDate ? `${product.startDate} 起` : `~ ${product.endDate}`);
+    textContent.push(`Date range: "${dateStr}"`);
+  }
+  if (product.cta) textContent.push(`CTA button: "${product.cta}"`);
+
+  if (textContent.length > 0) {
+    promptParts.push('Text overlays to render exactly as written (with proper typography hierarchy):');
+    textContent.forEach(t => promptParts.push('- ' + t));
+  }
+
+  // 顏色約束
+  promptParts.push(`Color palette: title text ${palette.title}, price ${palette.price}, badge background ${palette.badgeBg}, CTA background ${palette.ctaBg}.`);
+
+  // 品質與輸出
+  promptParts.push('Style: professional 8k commercial photography, ultra-sharp, high contrast, magazine-quality composition. The provided product should be placed naturally with realistic shadows and ambient lighting matching the background scene.');
+
+  const prompt = promptParts.join(' ');
+
+  const formData = new FormData();
+  formData.append('prompt', prompt);
+  formData.append('image', dataUrlToBlob(productImageDataUrl), 'product.png');
+  formData.append('model', 'gpt-image-1');
+  formData.append('quality', quality);
+  formData.append('width', String(w));
+  formData.append('height', String(h));
+
+  const res = await fetch(workerUrl, { method: 'POST', body: formData });
+  if (!res.ok) {
+    let errMsg = `Worker 錯誤 (${res.status})`;
+    try { const j = await res.json(); if (j.error) errMsg = j.error + (j.hint ? `\n\n💡 ${j.hint}` : (j.detail ? `\n${String(j.detail).substring(0, 300)}` : '')); } catch {}
+    throw new Error(errMsg);
+  }
+  const data = await res.json();
+  if (!data.image) throw new Error('Worker 沒有回傳圖片');
+  return data.image;
+}
+
 async function generateAIBackground(template, productType, w = 1280, h = 720, opts = {}) {
   const { provider = 'pollinations', workerUrl, quality = 'standard', style = 'vivid', model = 'dall-e-3' } = opts;
   const productHint = productType ? `, designed for ${productType} promotion` : '';
@@ -1784,6 +1875,36 @@ function DesignPanel({ design, setDesign, template, filterCategory, setFilterCat
     }
   };
 
+  const [fullDesignGenerating, setFullDesignGenerating] = useState(false);
+  const [fullDesignError, setFullDesignError] = useState('');
+  const [fullDesignQuality, setFullDesignQuality] = useState('medium');
+  const handleGenerateFullDesign = async () => {
+    if (!product?.image) {
+      setFullDesignError('請先在下方上傳商品圖（透明 PNG 最佳）');
+      return;
+    }
+    setFullDesignGenerating(true);
+    setFullDesignError('');
+    try {
+      const dataUrl = await generateAIFullDesign({
+        workerUrl: workerUrl.trim() || DEFAULT_WORKER_URL,
+        template,
+        product,
+        productImageDataUrl: product.image,
+        w: 1536,
+        h: 1024,
+        quality: fullDesignQuality,
+      });
+      setDesign(d => ({ ...d, fullDesign: dataUrl }));
+    } catch (err) {
+      setFullDesignError(err.message || 'AI 完整設計失敗');
+    } finally {
+      setFullDesignGenerating(false);
+    }
+  };
+
+  const fullDesignCost = fullDesignQuality === 'high' ? 8.0 : fullDesignQuality === 'low' ? 0.5 : 2.0;
+
   // 取得實際使用的顏色（覆寫優先）
   const palette = { ...template.palette, ...design.palette };
 
@@ -2068,6 +2189,88 @@ function DesignPanel({ design, setDesign, template, filterCategory, setFilterCat
           </div>
         </details>
       )}
+
+      <h2>🎨 AI 完整設計（Hero Banner）</h2>
+      <div style={{ background: 'linear-gradient(135deg, #fce7f3, #fae8ff)', border: '2px solid #d946ef', padding: 12, borderRadius: 10, marginBottom: 8 }}>
+        <div style={{ fontSize: 12, fontWeight: 900, color: '#86198f', marginBottom: 6 }}>
+          🚀 全新模式：AI 把商品 + 文字 + 構圖一次設計完成
+        </div>
+        <div style={{ fontSize: 11, color: '#86198f', lineHeight: 1.6, marginBottom: 6 }}>
+          上傳商品圖後按下方按鈕，GPT Image 1 會閱讀你的品牌、商品、價格、文字，<b>整體設計成像 JLab/momo 那種專業 banner</b>。<br />
+          <b>適用：</b>主視覺、Hero Banner、客戶提案。<br />
+          <b>不適用：</b>多尺寸量產（每張都需重新生成；建議僅做 1-2 張關鍵版位）。
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+          <label style={{ marginTop: 0, fontSize: 10 }}>品質</label>
+          <select
+            value={fullDesignQuality}
+            onChange={e => setFullDesignQuality(e.target.value)}
+            style={{ fontSize: 11, width: 'auto', padding: '4px 6px' }}
+          >
+            <option value="low">Low (NT$ 0.5)</option>
+            <option value="medium">Medium (NT$ 2)</option>
+            <option value="high">High (NT$ 8)</option>
+          </select>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#86198f' }}>
+            💰 約 NT$ {fullDesignCost} / 張
+          </span>
+        </div>
+        {!product?.image && (
+          <div style={{ fontSize: 11, color: '#dc2626', marginTop: 4, fontWeight: 700 }}>
+            ⚠️ 請先在下方「📦 商品圖片」上傳透明 PNG 商品圖
+          </div>
+        )}
+        <button
+          className="btn"
+          style={{
+            marginTop: 4,
+            background: fullDesignGenerating ? '#888'
+              : !product?.image ? '#cbd5e1'
+              : 'linear-gradient(135deg, #d946ef, #f472b6)',
+            fontSize: 13,
+          }}
+          onClick={handleGenerateFullDesign}
+          disabled={fullDesignGenerating || !product?.image}
+        >
+          {fullDesignGenerating ? '🎨 GPT Image 1 整體設計中…(約 30-60 秒)' : '🎨 用 AI 完整設計 Hero Banner'}
+        </button>
+        {fullDesignError && (
+          <div style={{ fontSize: 11, color: '#dc2626', marginTop: 6, whiteSpace: 'pre-wrap' }}>⚠️ {fullDesignError}</div>
+        )}
+        {design.fullDesign && !fullDesignGenerating && (
+          <div style={{ marginTop: 10 }}>
+            <img
+              src={design.fullDesign}
+              alt="AI Hero Design"
+              style={{ width: '100%', borderRadius: 8, border: '1px solid #e2e8f0' }}
+            />
+            <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+              <a
+                href={design.fullDesign}
+                download={`hero_${Date.now()}.png`}
+                className="btn"
+                style={{ padding: '6px 10px', fontSize: 11, width: 'auto', background: '#10b981', color: '#fff', textDecoration: 'none', textAlign: 'center' }}
+              >
+                ⬇ 下載 Hero Banner
+              </a>
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '6px 10px', fontSize: 11, width: 'auto' }}
+                onClick={handleGenerateFullDesign}
+              >
+                🔄 換一張
+              </button>
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '6px 10px', fontSize: 11, width: 'auto' }}
+                onClick={() => setDesign(d => ({ ...d, fullDesign: null }))}
+              >
+                ✕ 清除
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       <h2>🖼 自訂底圖（手動上傳）</h2>
       <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>有自己的高質感攝影圖？直接上傳會覆蓋模板背景。</div>
