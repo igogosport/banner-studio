@@ -461,6 +461,178 @@ const TEMPLATES = [
 const CATEGORIES = ['全部', '科技', '精品', '電競', '活力', '美妝', '健康', '美食', '節慶', 'Lifestyle', '親子'];
 
 /* ============================================================
+   BRAND STYLE SYSTEM
+   每個品牌定義：個性、色彩、字型、構圖、5 種情境（mood）、AI 關鍵字、負面風格
+   AI prompt = mood + brand keywords + product + negative + quality
+   ============================================================ */
+const BRANDS = {
+  jlab: {
+    id: 'jlab', name: 'JLab', emoji: '⚡',
+    personality: 'Youth tech / energetic / colorful / trendy / gaming-inspired / neon / high contrast',
+    palette: {
+      title: '#ffffff', subtitle: 'rgba(255,255,255,0.85)',
+      price: '#00f5ff', priceOriginal: 'rgba(255,255,255,0.5)',
+      badgeBg: '#00f5ff', badgeText: '#001a33',
+      ctaBg: '#00f5ff', ctaText: '#001a33',
+      date: 'rgba(255,255,255,0.85)',
+      productGlow: '#00bfff',
+    },
+    typography: { titleFont: 'Anton', priceFont: 'Anton', subFont: 'Noto Sans TC' },
+    composition: 'left-right',
+    defaults: { badge: '🔥 限時搶購', cta: '立即購買 →' },
+    keywords: 'cyber tech, gaming atmosphere, neon glow, shopping festival, high contrast, electric blue, youth tech, bold typography, dynamic composition, commercial banner design',
+    negative: 'luxury fashion, elegant serif typography, minimal Apple-like layout, soft pastel aesthetic',
+    moods: [
+      { id: 'neon-tech', name: 'Neon Tech', emoji: '🌈',
+        prompt: 'cyber tech atmosphere, electric blue and cyan neon glow, high contrast lighting, futuristic dark backdrop with neon accent lights, gaming aesthetic, dynamic energetic composition' },
+      { id: 'gaming', name: 'Gaming', emoji: '🎮',
+        prompt: 'gaming setup atmosphere, RGB lighting effects, dark backdrop with cyan and electric blue glow, esports vibe, dramatic high-contrast lighting, dynamic mood' },
+      { id: 'music-festival', name: 'Music Festival', emoji: '🎵',
+        prompt: 'music festival stage atmosphere, vibrant cyan blue spotlights, energetic concert vibe, neon party lights, dynamic crowd-feel composition, electric atmosphere' },
+      { id: 'colorful-lifestyle', name: 'Colorful Lifestyle', emoji: '🌟',
+        prompt: 'colorful youth lifestyle scene, vibrant cyan blue tones, energetic urban tech vibe, modern young consumer aesthetic, dynamic motion blur' },
+      { id: 'big-sale', name: 'Big Sale Event', emoji: '🔥',
+        prompt: 'shopping festival event backdrop, dynamic energetic mood, electric blue spotlights, abundance feeling, vibrant commercial banner aesthetic, big-sale promotional atmosphere' },
+    ],
+  },
+  myFirst: {
+    id: 'myFirst', name: 'myFirst', emoji: '🎀',
+    personality: 'Kids tech / parenting / cute / safe / educational / playful / soft / family friendly',
+    palette: {
+      title: '#3a3a5e', subtitle: '#6b6b8e',
+      price: '#ff7eb3', priceOriginal: 'rgba(58,58,94,0.5)',
+      badgeBg: '#ffb3d9', badgeText: '#3a3a5e',
+      ctaBg: '#a8d8ff', ctaText: '#3a3a5e',
+      date: '#6b6b8e',
+      productGlow: '#fff5e1',
+    },
+    typography: { titleFont: 'Bangers', priceFont: 'Bangers', subFont: 'Noto Sans TC' },
+    composition: 'center-hero',
+    defaults: { badge: '💝 親子優選', cta: '為孩子選購 →' },
+    keywords: 'cute tech, kids gadget, parenting lifestyle, soft pastel, playful design, toy aesthetic, friendly atmosphere, educational technology, family campaign, cute commercial banner',
+    negative: 'aggressive gaming, dark luxury, tactical atmosphere, masculine composition',
+    moods: [
+      { id: 'kids-safety', name: 'Kids Safety', emoji: '🧸',
+        prompt: 'cute friendly kids product backdrop, soft pastel blue and pink tones, safe playful atmosphere, rounded shapes, child-safe aesthetic, gentle parenting vibe' },
+      { id: 'cute-tech', name: 'Cute Technology', emoji: '🎀',
+        prompt: 'cute tech product backdrop, soft pastel pink and lavender, kawaii aesthetic, child-friendly tech vibe, rounded soft shapes, dreamy bokeh' },
+      { id: 'christmas-gift', name: 'Christmas Gift', emoji: '🎄',
+        prompt: 'cute Christmas gift backdrop, soft pastel red and mint green tones, snowy winter atmosphere, kids gift-wrapping vibe, warm cozy holiday mood' },
+      { id: 'educational-fun', name: 'Educational Fun', emoji: '📚',
+        prompt: 'educational fun backdrop, soft pastel rainbow tones, learning atmosphere, books and toys blurred, cheerful classroom vibe, doodle decorative elements' },
+      { id: 'parenting-lifestyle', name: 'Parenting Lifestyle', emoji: '👨‍👩‍👧',
+        prompt: 'parenting lifestyle backdrop, warm cream and soft pink tones, cozy home atmosphere, family bonding vibe, soft natural daylight, knitted texture' },
+    ],
+  },
+  cleer: {
+    id: 'cleer', name: 'Cleer', emoji: '💎',
+    personality: 'Premium audio / elegant / luxury technology / mature / music lifestyle / refined / fashionable',
+    palette: {
+      title: '#ffffff', subtitle: 'rgba(255,255,255,0.78)',
+      price: '#d4af37', priceOriginal: 'rgba(255,255,255,0.5)',
+      badgeBg: '#d4af37', badgeText: '#0a0a0a',
+      ctaBg: '#d4af37', ctaText: '#0a0a0a',
+      date: 'rgba(255,255,255,0.7)',
+      productGlow: '#d4af37',
+    },
+    typography: { titleFont: 'Playfair Display', priceFont: 'Playfair Display', subFont: 'Noto Serif TC' },
+    composition: 'center-hero',
+    defaults: { badge: '★ 精選典藏', cta: '立即典藏 →' },
+    keywords: 'luxury audio, premium acoustic, elegant technology, minimal luxury, music lifestyle, fashion commercial, water reflection, high-end electronics, cinematic atmosphere, premium product showcase',
+    negative: 'youth gaming, cartoon design, busy shopping layout, cheap discount feeling',
+    moods: [
+      { id: 'premium-acoustic', name: 'Premium Acoustic', emoji: '🎧',
+        prompt: 'luxury audio product backdrop, premium dark navy with silver accents, water ripple reflections, sophisticated cinematic lighting, audiophile aesthetic, fashion magazine quality' },
+      { id: 'luxury-gift', name: 'Luxury Gift', emoji: '🎁',
+        prompt: 'luxury gift product backdrop, deep black with warm gold accents, satin ribbons blur, premium giftwrap aesthetic, sophisticated celebration mood, jewelry box feel' },
+      { id: 'warm-music', name: 'Warm Music Lifestyle', emoji: '🎶',
+        prompt: 'warm music lifestyle backdrop, burgundy and cream tones, vinyl record blur, cozy intimate listening atmosphere, vintage cinematic mood, ambient lamp light' },
+      { id: 'minimal-fashion', name: 'Minimal Fashion', emoji: '👗',
+        prompt: 'minimal fashion product backdrop, clean gray and cream tones, fashion editorial aesthetic, spacious sophisticated composition, magazine quality lighting' },
+      { id: 'elegant-festival', name: 'Elegant Festival', emoji: '✨',
+        prompt: 'elegant celebration backdrop, deep navy with gold sparkle bokeh, sophisticated festive atmosphere, premium event aesthetic, champagne mood' },
+    ],
+  },
+  cardo: {
+    id: 'cardo', name: 'Cardo', emoji: '🏍',
+    personality: 'Motorcycle gear / tactical technology / rugged / masculine / outdoor / extreme sports / rider lifestyle',
+    palette: {
+      title: '#ffffff', subtitle: 'rgba(255,255,255,0.78)',
+      price: '#00bfff', priceOriginal: 'rgba(255,255,255,0.5)',
+      badgeBg: '#0066cc', badgeText: '#ffffff',
+      ctaBg: '#0066cc', ctaText: '#ffffff',
+      date: 'rgba(255,255,255,0.85)',
+      productGlow: '#00bfff',
+    },
+    typography: { titleFont: 'Bebas Neue', priceFont: 'Bebas Neue', subFont: 'Oswald' },
+    composition: 'left-right',
+    defaults: { badge: '🏍 騎士首選', cta: 'GEAR UP →' },
+    keywords: 'motorcycle communication, tactical gear, rugged technology, blue smoke, outdoor adventure, extreme sports, masculine commercial, premium rider equipment, cinematic sports lighting, industrial tech banner',
+    negative: 'cute pastel, luxury fashion elegance, cartoon elements, soft parenting aesthetic',
+    moods: [
+      { id: 'tactical-tech', name: 'Tactical Tech', emoji: '🎯',
+        prompt: 'tactical motorcycle gear backdrop, dark cinematic atmosphere, blue smoke effects, industrial tech vibe, rugged premium equipment aesthetic, military-grade feeling, dramatic spotlight' },
+      { id: 'rider-lifestyle', name: 'Rider Lifestyle', emoji: '🛣',
+        prompt: 'motorcycle rider lifestyle backdrop, open road at golden hour, dramatic stormy sky, rugged adventure mood, extreme sports cinematic atmosphere, motion blur' },
+      { id: 'outdoor-adventure', name: 'Outdoor Adventure', emoji: '⛰',
+        prompt: 'outdoor adventure backdrop, mountain range with dramatic clouds, blue smoke and fog, extreme outdoor sports atmosphere, cinematic landscape, raw nature feel' },
+      { id: 'rugged-gear', name: 'Rugged Gear', emoji: '🔧',
+        prompt: 'rugged gear product backdrop, industrial dark gray with electric blue accents, brushed metal texture, tactical equipment aesthetic, professional gear vibe' },
+      { id: 'product-lineup', name: 'Product Lineup Showcase', emoji: '📦',
+        prompt: 'premium product lineup showcase backdrop, dark dramatic spotlight, blue smoke ambient lighting, professional product showcase atmosphere, commercial gear catalog feeling' },
+    ],
+  },
+};
+
+const BRAND_LIST = ['general', ...Object.keys(BRANDS)];
+
+/* 從品牌 + mood + 商品類型 組出 AI prompt */
+function buildBrandAIPrompt(brand, mood, productType) {
+  const parts = [];
+  if (mood?.prompt) parts.push(mood.prompt);
+  parts.push(brand.keywords);
+  if (productType) parts.push(`designed for ${productType} promotion`);
+  parts.push('banner background only, empty composition, no products, no text, no logos, no watermarks');
+  if (brand.negative) parts.push(`avoid: ${brand.negative}`);
+  parts.push('professional 8k commercial photography');
+  return parts.join(', ');
+}
+
+/* 從品牌 + mood 建虛擬模板（套到 render engine） */
+function buildBrandTemplate(brandId, moodId) {
+  const brand = BRANDS[brandId];
+  if (!brand) return null;
+  const mood = brand.moods.find(m => m.id === moodId) || brand.moods[0];
+  return {
+    id: `${brand.id}-${mood.id}`,
+    name: `${brand.name} · ${mood.name}`,
+    emoji: brand.emoji,
+    category: brand.name,
+    layout: brand.composition,
+    // 沒有 AI 圖時用品牌色當 fallback 漸層
+    bg: {
+      base: { type: 'linear', colors: brandFallbackBg(brand), angle: 135 },
+      orbs: [],
+      noise: 0.02,
+      vignette: 0.25,
+    },
+    palette: brand.palette,
+    typography: brand.typography,
+    aiPrompt: buildBrandAIPrompt(brand, mood, ''),
+    defaults: brand.defaults,
+    _brand: brand,
+    _mood: mood,
+  };
+}
+
+function brandFallbackBg(brand) {
+  // 用 palette 的 productGlow + 暗色當 fallback
+  const dark = ['jlab', 'cleer', 'cardo'].includes(brand.id);
+  if (dark) return ['#0a0a0a', brand.palette.productGlow || '#003366'];
+  return ['#fef6f9', brand.palette.productGlow || '#ffe5ec'];
+}
+
+/* ============================================================
    工具函式
    ============================================================ */
 const fileToDataURL = (file) => new Promise((resolve, reject) => {
@@ -1123,7 +1295,9 @@ function App() {
     selectedSizes: ['social_1080x1080', 'igstory_1080x1920', 'share_1200x630'],
   });
   const [design, setDesign] = useState({
-    templateId: 'tech-flash',
+    brandId: 'general',          // 'general' = 用 templates；其他 = 用品牌系統
+    moodId: null,                // 品牌的 mood id
+    templateId: 'tech-flash',    // 通用模板 id
     customBg: null,
     logo: null,
     palette: {},      // 使用者覆寫色彩
@@ -1154,7 +1328,12 @@ function App() {
     else setCustomBgImg(null);
   }, [design.customBg]);
 
-  const template = useMemo(() => TEMPLATES.find(t => t.id === design.templateId) || TEMPLATES[0], [design.templateId]);
+  const template = useMemo(() => {
+    if (design.brandId && design.brandId !== 'general') {
+      return buildBrandTemplate(design.brandId, design.moodId);
+    }
+    return TEMPLATES.find(t => t.id === design.templateId) || TEMPLATES[0];
+  }, [design.brandId, design.moodId, design.templateId]);
 
   // 根據選中的模板自動填入預設 badge / cta（如果使用者沒填）
   useEffect(() => {
@@ -1542,31 +1721,106 @@ function DesignPanel({ design, setDesign, template, filterCategory, setFilterCat
   // 取得實際使用的顏色（覆寫優先）
   const palette = { ...template.palette, ...design.palette };
 
+  const isBrandMode = design.brandId && design.brandId !== 'general';
+  const currentBrand = isBrandMode ? BRANDS[design.brandId] : null;
+
+  const pickBrand = (brandId) => {
+    if (brandId === 'general') {
+      setDesign(d => ({ ...d, brandId: 'general', moodId: null, palette: {} }));
+    } else {
+      const brand = BRANDS[brandId];
+      const firstMood = brand.moods[0].id;
+      setDesign(d => ({ ...d, brandId, moodId: firstMood, palette: {} }));
+    }
+  };
+
+  const pickMood = (moodId) => {
+    setDesign(d => ({ ...d, moodId, palette: {} }));
+  };
+
   return (
     <div>
-      <h2>🎨 商業級模板</h2>
-      <div style={{ fontSize: 11, color: '#888', marginBottom: 8 }}>
-        每套模板都是固定版型骨架（Master Template），元件不可超出安全區
+      <h2>🏷 品牌風格系統</h2>
+      <div style={{ fontSize: 11, color: '#888', marginBottom: 8, lineHeight: 1.6 }}>
+        選擇品牌會自動套用該品牌色彩、字型、版型、AI 風格詞。「通用」則使用 10 套商業模板。
       </div>
-
-      <div className="category-filter">
-        {CATEGORIES.map(c => (
-          <span key={c} className={`category-pill ${filterCategory === c ? 'active' : ''}`} onClick={() => setFilterCategory(c)}>{c}</span>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6, marginBottom: 12 }}>
+        <div
+          onClick={() => pickBrand('general')}
+          style={{
+            padding: '10px 4px', borderRadius: 8, cursor: 'pointer', textAlign: 'center',
+            background: design.brandId === 'general' ? '#1a1a1a' : '#f0f2f5',
+            color: design.brandId === 'general' ? '#fff' : '#1a1a1a',
+            fontSize: 11, fontWeight: 700, transition: 'all 0.15s',
+          }}
+        >
+          📐<br />通用
+        </div>
+        {Object.values(BRANDS).map(b => (
+          <div
+            key={b.id}
+            onClick={() => pickBrand(b.id)}
+            style={{
+              padding: '10px 4px', borderRadius: 8, cursor: 'pointer', textAlign: 'center',
+              background: design.brandId === b.id ? '#1a1a1a' : '#f0f2f5',
+              color: design.brandId === b.id ? '#fff' : '#1a1a1a',
+              fontSize: 11, fontWeight: 700, transition: 'all 0.15s',
+            }}
+          >
+            {b.emoji}<br />{b.name}
+          </div>
         ))}
       </div>
 
-      <div className="template-gallery">
-        {filtered.map((t, i) => (
-          <TemplateThumb
-            key={t.id}
-            idx={i}
-            template={t}
-            active={t.id === design.templateId}
-            onClick={() => setDesign(d => ({ ...d, templateId: t.id, palette: {} }))}
-            productImg={productImg}
-          />
-        ))}
-      </div>
+      {isBrandMode && (
+        <div style={{ marginBottom: 16 }}>
+          <h2>{currentBrand.emoji} {currentBrand.name} - 情境</h2>
+          <div className="template-gallery">
+            {currentBrand.moods.map((m, i) => (
+              <BrandMoodThumb
+                key={m.id}
+                idx={i}
+                brand={currentBrand}
+                mood={m}
+                active={m.id === design.moodId}
+                onClick={() => pickMood(m.id)}
+                productImg={productImg}
+              />
+            ))}
+          </div>
+          <div style={{ background: '#f8f9fb', padding: 10, borderRadius: 8, fontSize: 11, lineHeight: 1.7, color: '#444', marginTop: 10 }}>
+            <div><b>品牌個性</b>：{currentBrand.personality}</div>
+            <div style={{ marginTop: 4 }}><b>關鍵字</b>：{currentBrand.keywords}</div>
+            <div style={{ marginTop: 4, color: '#dc2626' }}><b>避免</b>：{currentBrand.negative}</div>
+          </div>
+        </div>
+      )}
+
+      {!isBrandMode && (
+        <>
+          <h2>🎨 通用商業模板</h2>
+          <div style={{ fontSize: 11, color: '#888', marginBottom: 8 }}>
+            10 套通用版型骨架（不綁定特定品牌），可微調顏色字型
+          </div>
+          <div className="category-filter">
+            {CATEGORIES.map(c => (
+              <span key={c} className={`category-pill ${filterCategory === c ? 'active' : ''}`} onClick={() => setFilterCategory(c)}>{c}</span>
+            ))}
+          </div>
+          <div className="template-gallery">
+            {filtered.map((t, i) => (
+              <TemplateThumb
+                key={t.id}
+                idx={i}
+                template={t}
+                active={t.id === design.templateId}
+                onClick={() => setDesign(d => ({ ...d, templateId: t.id, palette: {} }))}
+                productImg={productImg}
+              />
+            ))}
+          </div>
+        </>
+      )}
 
       <h2>🤖 AI 生成攝影級背景</h2>
       <div style={{ fontSize: 11, color: '#888', marginBottom: 6, lineHeight: 1.6 }}>
@@ -1673,6 +1927,37 @@ function DesignPanel({ design, setDesign, template, filterCategory, setFilterCat
 /* ============================================================
    Template Thumbnail
    ============================================================ */
+function BrandMoodThumb({ brand, mood, active, onClick, productImg, idx }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    let cancelled = false;
+    const t = setTimeout(() => {
+      if (cancelled || !ref.current) return;
+      document.fonts.ready.then(() => {
+        if (cancelled || !ref.current) return;
+        const tpl = buildBrandTemplate(brand.id, mood.id);
+        renderTemplate(ref.current, 320, 180, tpl, {
+          title: brand.name,
+          subtitle: mood.name,
+          salePrice: '999',
+          originalPrice: '1999',
+          badge: brand.defaults.badge,
+          cta: brand.defaults.cta,
+        }, productImg, null, null);
+      });
+    }, (idx || 0) * 80);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [brand, mood, productImg, idx]);
+
+  return (
+    <div className={`template-thumb ${active ? 'active' : ''}`} onClick={onClick}>
+      <canvas ref={ref} />
+      <div className="template-name">{mood.emoji} {mood.name}</div>
+    </div>
+  );
+}
+
 function TemplateThumb({ template, active, onClick, productImg, idx }) {
   const ref = useRef(null);
   useEffect(() => {
