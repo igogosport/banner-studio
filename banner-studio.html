@@ -690,6 +690,71 @@ function dataUrlToBlob(dataUrl) {
   return new Blob([arr], { type: mime });
 }
 
+/* AI 場景合成（含商品，無文字）— 商品融入場景，文字交給 Canvas 疊加 */
+async function generateAISceneCompose({ workerUrl, template, product, productImageDataUrl, w = 1536, h = 1024, quality = 'medium' }) {
+  if (!workerUrl) throw new Error('未設定 Worker URL');
+  if (!productImageDataUrl) throw new Error('請先上傳商品圖');
+
+  const brand = template._brand;
+  const mood = template._mood;
+
+  const promptParts = [];
+  promptParts.push('Use the provided product image. Place it naturally and prominently in a commercial product photography scene with realistic environmental lighting and shadows.');
+
+  if (brand) {
+    promptParts.push(`Brand visual style: ${brand.name} — ${brand.personality}.`);
+    promptParts.push(`Atmosphere: ${mood.prompt}.`);
+    promptParts.push(`Style keywords: ${brand.keywords}.`);
+    promptParts.push(`Avoid: ${brand.negative}.`);
+  } else {
+    promptParts.push(`Style: ${template.aiPrompt}`);
+  }
+
+  // 構圖：商品放右半，左側留白給文字
+  const composeHints = {
+    'left-right': 'COMPOSITION: Product on the RIGHT side (about 40-50% width), with the LEFT side kept relatively clean and uniform (slight gradient or atmospheric lighting only) so text can be overlaid on the left in post-processing.',
+    'right-left': 'COMPOSITION: Product on the LEFT side (about 40-50% width), with the RIGHT side kept relatively clean and uniform so text can be overlaid on the right in post-processing.',
+    'center-hero': 'COMPOSITION: Product positioned in the upper-center, with bottom area kept relatively clean and atmospheric so text can be overlaid below in post-processing.',
+    'top-bottom': 'COMPOSITION: Product centered in the middle, with both top and bottom areas kept relatively clean for text overlay.',
+  };
+  promptParts.push(composeHints[template.layout] || composeHints['left-right']);
+
+  promptParts.push('Lighting: cinematic professional product photography lighting. Add realistic ambient glow, color reflections from the scene onto the product surface, contact shadow on the surface beneath the product, and atmospheric depth.');
+
+  // ⚠️ 強烈禁止文字
+  promptParts.push('CRITICAL CONSTRAINTS — NO TEXT WHATSOEVER:');
+  promptParts.push('• ABSOLUTELY NO TEXT in the image — no letters, no Chinese characters, no numbers, no digits, no symbols, no punctuation.');
+  promptParts.push('• NO logos, NO brand marks, NO icons, NO badges, NO buttons.');
+  promptParts.push('• NO product labels, NO printed text on the product surface, NO floating labels, NO call-to-action elements.');
+  promptParts.push('• If the original product has text on it (e.g., brand label), preserve it as-is but do NOT add any new text.');
+  promptParts.push('• The empty side should have a clean atmospheric gradient/lighting background suitable for text overlay (DO NOT add decorative text or symbols there).');
+
+  // ⚠️ 直角全幅
+  promptParts.push('FRAME: Full-bleed rectangular banner with sharp 90-degree corners. NO rounded corners, NO border, NO frame, NO padding around the design. Edge-to-edge composition.');
+
+  promptParts.push('Quality: 8k professional commercial product photography, ultra-sharp details, realistic textures, magazine quality.');
+
+  const prompt = promptParts.join(' ');
+
+  const formData = new FormData();
+  formData.append('prompt', prompt);
+  formData.append('image', dataUrlToBlob(productImageDataUrl), 'product.png');
+  formData.append('model', 'gpt-image-1');
+  formData.append('quality', quality);
+  formData.append('width', String(w));
+  formData.append('height', String(h));
+
+  const res = await fetch(workerUrl, { method: 'POST', body: formData });
+  if (!res.ok) {
+    let errMsg = `Worker 錯誤 (${res.status})`;
+    try { const j = await res.json(); if (j.error) errMsg = j.error + (j.hint ? `\n\n💡 ${j.hint}` : (j.detail ? `\n${String(j.detail).substring(0, 300)}` : '')); } catch {}
+    throw new Error(errMsg);
+  }
+  const data = await res.json();
+  if (!data.image) throw new Error('Worker 沒有回傳圖片');
+  return data.image;
+}
+
 /* 完整 AI 設計（含商品 + 文字）— 使用 GPT Image 1 image edits */
 async function generateAIFullDesign({ workerUrl, template, product, productImageDataUrl, w = 1536, h = 1024, quality = 'medium' }) {
   if (!workerUrl) throw new Error('未設定 Worker URL');
@@ -1333,19 +1398,14 @@ async function renderTemplate(canvas, w, h, template, content, productImg, logoI
   const base = Math.min(w, h); // typography baseline
 
   // === Hero 完整設計模式：智慧裁切判定 ===
-  // 由於 Hero 通常是「左文字 / 右商品」的構圖：
-  //   - 目標比 Hero 寬：cover-fit 切上下，不影響左右文字 → 容忍範圍大 (×2.0)
-  //   - 目標比 Hero 窄：cover-fit 切左右，會切掉文字 → 容忍範圍小 (×1.2)
   const fullDesignImg = overrides.fullDesignImg;
   if (fullDesignImg) {
     const heroAspect = fullDesignImg.width / fullDesignImg.height;
     const targetAspect = w / h;
     let useHero;
     if (targetAspect >= heroAspect) {
-      // 目標較寬：上下切（OK，不影響文字）
       useHero = (targetAspect / heroAspect) <= 2.0;
     } else {
-      // 目標較窄：左右切（會切掉文字），嚴格只容忍 20%
       useHero = (heroAspect / targetAspect) <= 1.2;
     }
     if (useHero) {
@@ -1353,27 +1413,50 @@ async function renderTemplate(canvas, w, h, template, content, productImg, logoI
       drawImageCover(ctx, fullDesignImg, -w * inflate, -h * inflate, w * (1 + 2 * inflate), h * (1 + 2 * inflate));
       return;
     }
-    // 比例差太多 → 完全不用 Hero（避免 AI 文字+Canvas 文字重疊），改用模板正常渲染
   }
 
-  // === 背景層 ===
-  if (customBgImg) {
-    drawImageCover(ctx, customBgImg, 0, 0, w, h);
-    ctx.fillStyle = 'rgba(0,0,0,0.18)';
-    ctx.fillRect(0, 0, w, h);
-  } else {
-    drawBaseBackground(ctx, template.bg.base, w, h);
-    (template.bg.orbs || []).forEach(orb => drawOrb(ctx, orb, w, h));
-    drawAccent(ctx, template.bg.accent, w, h);
-    drawNoise(ctx, template.bg.noise || 0, w, h);
-    drawVignette(ctx, template.bg.vignette || 0, w, h);
+  // === AI 場景合成模式：場景圖 + Canvas 文字（無重複文字） ===
+  // 場景圖含商品，所以 Canvas 不再渲染商品圖，只渲染文字
+  const sceneComposeImg = overrides.sceneComposeImg;
+  let sceneActive = false;
+  if (sceneComposeImg) {
+    const sceneAspect = sceneComposeImg.width / sceneComposeImg.height;
+    const targetAspect = w / h;
+    let useScene;
+    if (targetAspect >= sceneAspect) {
+      useScene = (targetAspect / sceneAspect) <= 2.0;
+    } else {
+      useScene = (sceneAspect / targetAspect) <= 1.4; // 場景商品在右半，左右切容忍稍大一點
+    }
+    if (useScene) {
+      const inflate = 0.03;
+      drawImageCover(ctx, sceneComposeImg, -w * inflate, -h * inflate, w * (1 + 2 * inflate), h * (1 + 2 * inflate));
+      // 文字區域稍微壓暗，讓文字易讀
+      sceneActive = true;
+      // fall through 繼續畫文字（但跳過商品 + 跳過原本背景）
+    }
+  }
+
+  // === 背景層（場景模式時跳過，因為已經畫過 scene） ===
+  if (!sceneActive) {
+    if (customBgImg) {
+      drawImageCover(ctx, customBgImg, 0, 0, w, h);
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      ctx.fillRect(0, 0, w, h);
+    } else {
+      drawBaseBackground(ctx, template.bg.base, w, h);
+      (template.bg.orbs || []).forEach(orb => drawOrb(ctx, orb, w, h));
+      drawAccent(ctx, template.bg.accent, w, h);
+      drawNoise(ctx, template.bg.noise || 0, w, h);
+      drawVignette(ctx, template.bg.vignette || 0, w, h);
+    }
   }
 
   // === 計算版型 ===
   const layout = computeLayout(template, w, h);
 
-  // === 商品圖 ===
-  if (productImg) drawProductWithEffects(ctx, productImg, layout.product, template);
+  // === 商品圖（場景模式時跳過，商品已在場景圖中） ===
+  if (!sceneActive && productImg) drawProductWithEffects(ctx, productImg, layout.product, template);
 
   // === Logo ===
   if (logoImg && layout.logo) {
@@ -1489,6 +1572,7 @@ function App() {
   const [logoImg, setLogoImg] = useState(null);
   const [customBgImg, setCustomBgImg] = useState(null);
   const [fullDesignImg, setFullDesignImg] = useState(null);
+  const [sceneComposeImg, setSceneComposeImg] = useState(null);
   const [exporting, setExporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [progressLabel, setProgressLabel] = useState('');
@@ -1514,6 +1598,11 @@ function App() {
     if (design.fullDesign) loadImage(design.fullDesign).then(setFullDesignImg).catch(() => setFullDesignImg(null));
     else setFullDesignImg(null);
   }, [design.fullDesign]);
+
+  useEffect(() => {
+    if (design.sceneCompose) loadImage(design.sceneCompose).then(setSceneComposeImg).catch(() => setSceneComposeImg(null));
+    else setSceneComposeImg(null);
+  }, [design.sceneCompose]);
 
   const template = useMemo(() => {
     if (design.brandId && design.brandId !== 'general') {
@@ -1546,7 +1635,7 @@ function App() {
   useEffect(() => {
     if (!previewCanvasRef.current) return;
     document.fonts.ready.then(() => {
-      renderTemplate(previewCanvasRef.current, 1200, 630, template, content, productImg, logoImg, customBgImg, { palette: design.palette, typography: design.typography, fullDesignImg });
+      renderTemplate(previewCanvasRef.current, 1200, 630, template, content, productImg, logoImg, customBgImg, { palette: design.palette, typography: design.typography, fullDesignImg, sceneComposeImg });
     });
   }, [template, content, productImg, logoImg, customBgImg, fullDesignImg, design.palette, design.typography]);
 
@@ -1590,7 +1679,7 @@ function App() {
     for (let i = 0; i < selectedSizesData.length; i++) {
       const s = selectedSizesData[i];
       setProgressLabel(`輸出 ${s.label} (${s.w}×${s.h})…`);
-      await renderTemplate(offCanvas, s.w, s.h, template, content, productImg, logoImg, customBgImg, { palette: design.palette, typography: design.typography, fullDesignImg });
+      await renderTemplate(offCanvas, s.w, s.h, template, content, productImg, logoImg, customBgImg, { palette: design.palette, typography: design.typography, fullDesignImg, sceneComposeImg });
       const blob = await new Promise(res => offCanvas.toBlob(res, 'image/png'));
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -1615,6 +1704,7 @@ function App() {
           <div className={`tab ${tab==='shop'?'active':''}`} onClick={() => setTab('shop')}>🛒 電商</div>
           <div className={`tab ${tab==='market'?'active':''}`} onClick={() => setTab('market')}>📣 行銷</div>
           <div className={`tab ${tab==='design'?'active':''}`} onClick={() => setTab('design')}>🎨 美編</div>
+          <div className={`tab ${tab==='compose'?'active':''}`} onClick={() => setTab('compose')}>🪄 AI 合成</div>
         </div>
 
         {tab === 'shop' && <ShopPanel product={product} setProduct={setProduct} />}
@@ -1633,6 +1723,18 @@ function App() {
           productImg={productImg}
           productName={product.name}
         />}
+        {tab === 'compose' && <ComposePanel
+          design={design}
+          setDesign={setDesign}
+          template={template}
+          filterCategory={filterCategory}
+          setFilterCategory={setFilterCategory}
+          onLogo={handleLogoImage}
+          onProductImage={handleProductImage}
+          product={product}
+          setProduct={setProduct}
+          productImg={productImg}
+        />}
       </div>
 
       <div className="preview-area">
@@ -1645,6 +1747,11 @@ function App() {
                 🎨 AI Hero 模式（套用所有尺寸）
               </span>
             )}
+            {sceneComposeImg && !fullDesignImg && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg, #8b5cf6, #d946ef)', padding: '4px 10px', borderRadius: 999 }}>
+                🪄 AI 合成模式（場景 + Canvas 文字）
+              </span>
+            )}
           </div>
           <div className="preview-canvas-wrap">
             <canvas ref={previewCanvasRef} />
@@ -1652,6 +1759,11 @@ function App() {
           {fullDesignImg && (
             <div style={{ marginTop: 8, fontSize: 11, color: '#86198f', background: '#fce7f3', padding: '8px 10px', borderRadius: 8, lineHeight: 1.6 }}>
               💡 目前所有尺寸都使用 AI Hero 為主圖（依比例自動裁切）。要回到模板模式：美編面板 → AI 完整設計 → 「✕ 清除」
+            </div>
+          )}
+          {sceneComposeImg && !fullDesignImg && (
+            <div style={{ marginTop: 8, fontSize: 11, color: '#5b21b6', background: '#ddd6fe', padding: '8px 10px', borderRadius: 8, lineHeight: 1.6 }}>
+              💡 AI 場景作為背景，Canvas 疊加 100% 繁體中文文字。要回到純模板模式：AI 合成面板 → 「✕ 清除」
             </div>
           )}
         </div>
@@ -1667,7 +1779,7 @@ function App() {
               productImg={productImg}
               logoImg={logoImg}
               customBgImg={customBgImg}
-              overrides={{ palette: design.palette, typography: design.typography, fullDesignImg }}
+              overrides={{ palette: design.palette, typography: design.typography, fullDesignImg, sceneComposeImg }}
             />
           </div>
         )}
@@ -2394,6 +2506,182 @@ function DesignPanel({ design, setDesign, template, filterCategory, setFilterCat
 /* ============================================================
    Template Thumbnail
    ============================================================ */
+/* ============================================================
+   Compose Panel — AI 場景 + Canvas 文字
+   ============================================================ */
+function ComposePanel({ design, setDesign, template, filterCategory, setFilterCategory, onLogo, onProductImage, product, setProduct, productImg }) {
+  const filtered = useMemo(() =>
+    filterCategory === '全部' ? TEMPLATES : TEMPLATES.filter(t => t.category === filterCategory),
+    [filterCategory]
+  );
+
+  const [aiQuality, setAiQuality] = useState(() => localStorage.getItem('bs_compose_quality') || 'medium');
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState('');
+  const workerUrl = useMemo(() => (localStorage.getItem('bs_worker_url') || DEFAULT_WORKER_URL), []);
+
+  useEffect(() => { localStorage.setItem('bs_compose_quality', aiQuality); }, [aiQuality]);
+
+  const isBrandMode = design.brandId && design.brandId !== 'general';
+  const currentBrand = isBrandMode ? BRANDS[design.brandId] : null;
+
+  const pickBrand = (brandId) => {
+    if (brandId === 'general') {
+      setDesign(d => ({ ...d, brandId: 'general', moodId: null, palette: {} }));
+    } else {
+      const brand = BRANDS[brandId];
+      const firstMood = brand.moods[0].id;
+      setDesign(d => ({ ...d, brandId, moodId: firstMood, palette: {} }));
+    }
+  };
+  const pickMood = (moodId) => setDesign(d => ({ ...d, moodId, palette: {} }));
+
+  const handleGenerate = async () => {
+    if (!product?.image) { setError('請先在下方上傳商品圖（透明 PNG 最佳）'); return; }
+    setGenerating(true);
+    setError('');
+    try {
+      const dataUrl = await generateAISceneCompose({
+        workerUrl,
+        template,
+        product,
+        productImageDataUrl: product.image,
+        w: 1536,
+        h: 1024,
+        quality: aiQuality,
+      });
+      setDesign(d => ({ ...d, sceneCompose: dataUrl, fullDesign: null })); // 清掉舊 Hero
+    } catch (err) {
+      setError(err.message || 'AI 合成失敗');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const cost = aiQuality === 'high' ? 8.0 : aiQuality === 'low' ? 0.5 : 2.0;
+
+  return (
+    <div>
+      <h2>🪄 AI 合成（場景 + Canvas 文字）</h2>
+      <div style={{ background: 'linear-gradient(135deg, #ddd6fe, #fbcfe8)', border: '2px solid #8b5cf6', padding: 12, borderRadius: 10, marginBottom: 12 }}>
+        <div style={{ fontSize: 12, fontWeight: 900, color: '#5b21b6', marginBottom: 6 }}>
+          ✨ 強力組合：AI 做場景 / Canvas 做文字
+        </div>
+        <div style={{ fontSize: 11, color: '#5b21b6', lineHeight: 1.7 }}>
+          <b>AI 部分</b>：把你的商品自然融入有氛圍的場景（光線、陰影、反射）。<br />
+          <b>Canvas 部分</b>：精準疊加繁體中文文字、價格、Badge、CTA、日期。<br />
+          <b>結果</b>：視覺品質 9/10 + 文字 100% 正確 + 多尺寸自動適配。
+        </div>
+      </div>
+
+      <h2>🏷 品牌風格</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6, marginBottom: 12 }}>
+        <div onClick={() => pickBrand('general')} style={{ padding: '10px 4px', borderRadius: 8, cursor: 'pointer', textAlign: 'center', background: design.brandId === 'general' ? '#1a1a1a' : '#f0f2f5', color: design.brandId === 'general' ? '#fff' : '#1a1a1a', fontSize: 11, fontWeight: 700 }}>
+          📐<br />通用
+        </div>
+        {Object.values(BRANDS).map(b => (
+          <div key={b.id} onClick={() => pickBrand(b.id)} style={{ padding: '10px 4px', borderRadius: 8, cursor: 'pointer', textAlign: 'center', background: design.brandId === b.id ? '#1a1a1a' : '#f0f2f5', color: design.brandId === b.id ? '#fff' : '#1a1a1a', fontSize: 11, fontWeight: 700 }}>
+            {b.emoji}<br />{b.name}
+          </div>
+        ))}
+      </div>
+
+      {isBrandMode && (
+        <div style={{ marginBottom: 14 }}>
+          <h2>{currentBrand.emoji} {currentBrand.name} - 情境</h2>
+          <div className="template-gallery">
+            {currentBrand.moods.map((m, i) => (
+              <BrandMoodThumb key={m.id} idx={i} brand={currentBrand} mood={m} active={m.id === design.moodId} onClick={() => pickMood(m.id)} productImg={productImg} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!isBrandMode && (
+        <>
+          <h2>🎨 通用模板</h2>
+          <div className="category-filter">
+            {CATEGORIES.map(c => (
+              <span key={c} className={`category-pill ${filterCategory === c ? 'active' : ''}`} onClick={() => setFilterCategory(c)}>{c}</span>
+            ))}
+          </div>
+          <div className="template-gallery">
+            {filtered.map((t, i) => (
+              <TemplateThumb key={t.id} idx={i} template={t} active={t.id === design.templateId} onClick={() => setDesign(d => ({ ...d, templateId: t.id, palette: {} }))} productImg={productImg} />
+            ))}
+          </div>
+        </>
+      )}
+
+      <h2>📦 商品圖片</h2>
+      <div style={{ fontSize: 11, color: '#888', marginBottom: 4, lineHeight: 1.6 }}>
+        建議透明 PNG 去背圖。AI 會把商品融入場景，加環境光與陰影。
+      </div>
+      <input type="file" accept="image/*" onChange={onProductImage} />
+      {product.image && (
+        <>
+          <img src={product.image} alt="" style={{ width: '100%', marginTop: 8, background: 'repeating-conic-gradient(#e5e7eb 0% 25%, #fff 0% 50%) 50% / 16px 16px', padding: 4 }} />
+          <button className="btn btn-secondary" style={{ padding: 6, fontSize: 12, marginTop: 4 }} onClick={() => setProduct(p => ({ ...p, image: null }))}>移除商品圖</button>
+        </>
+      )}
+
+      <h2>🪄 AI 場景合成</h2>
+      <div style={{ background: 'linear-gradient(135deg, #f3e8ff, #fce7f3)', border: '2px solid #c084fc', padding: 12, borderRadius: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+          <label style={{ marginTop: 0, fontSize: 10 }}>品質</label>
+          <select value={aiQuality} onChange={e => setAiQuality(e.target.value)} style={{ fontSize: 11, width: 'auto', padding: '4px 6px' }}>
+            <option value="low">Low (NT$ 0.5)</option>
+            <option value="medium">Medium (NT$ 2)</option>
+            <option value="high">High (NT$ 8)</option>
+          </select>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#6b21a8' }}>💰 約 NT$ {cost} / 張</span>
+        </div>
+        {!product?.image && (
+          <div style={{ fontSize: 11, color: '#dc2626', marginTop: 4, fontWeight: 700 }}>
+            ⚠️ 請先上傳商品圖
+          </div>
+        )}
+        <button
+          className="btn"
+          style={{ marginTop: 4, background: generating ? '#888' : !product?.image ? '#cbd5e1' : 'linear-gradient(135deg, #8b5cf6, #d946ef)', fontSize: 13 }}
+          onClick={handleGenerate}
+          disabled={generating || !product?.image}
+        >
+          {generating ? '🪄 AI 合成中…(約 30-60 秒)' : '🪄 用 AI 生成場景（無文字）'}
+        </button>
+        {error && <div style={{ fontSize: 11, color: '#dc2626', marginTop: 6, whiteSpace: 'pre-wrap' }}>⚠️ {error}</div>}
+        {design.sceneCompose && !generating && (
+          <div style={{ marginTop: 10 }}>
+            <img src={design.sceneCompose} alt="Scene" style={{ width: '100%', border: '1px solid #e2e8f0' }} />
+            <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+              <button className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: 11, width: 'auto' }} onClick={handleGenerate}>🔄 換一張</button>
+              <button className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: 11, width: 'auto' }} onClick={() => setDesign(d => ({ ...d, sceneCompose: null }))}>✕ 清除（回到模板）</button>
+            </div>
+            <div style={{ fontSize: 10, color: '#5b21b6', marginTop: 6, lineHeight: 1.6 }}>
+              ✓ 已套用 AI 場景。所有勾選尺寸都會用此場景 + Canvas 疊加文字。
+            </div>
+          </div>
+        )}
+      </div>
+
+      <h2>🔖 品牌 Logo（選填）</h2>
+      <input type="file" accept="image/*" onChange={onLogo} />
+      {design.logo && (
+        <>
+          <img src={design.logo} alt="" style={{ width: '100%', marginTop: 8, background: '#f0f2f5', padding: 8 }} />
+          <button className="btn btn-secondary" style={{ padding: 6, fontSize: 12, marginTop: 4 }} onClick={() => setDesign(d => ({ ...d, logo: null }))}>移除 Logo</button>
+        </>
+      )}
+
+      <h2>🎨 顏色微調</h2>
+      <div className="row">
+        <div><label>標題色</label><input type="color" value={(template.palette.title || '#fff').startsWith('#') ? template.palette.title : '#ffffff'} onChange={e => setDesign(d => ({ ...d, palette: { ...d.palette, title: e.target.value } }))} /></div>
+        <div><label>價格色</label><input type="color" value={(template.palette.price || '#fff').startsWith('#') ? template.palette.price : '#ffffff'} onChange={e => setDesign(d => ({ ...d, palette: { ...d.palette, price: e.target.value } }))} /></div>
+      </div>
+    </div>
+  );
+}
+
 function BrandMoodThumb({ brand, mood, active, onClick, productImg, idx }) {
   const ref = useRef(null);
   useEffect(() => {
