@@ -91,28 +91,77 @@
 const { useState, useEffect, useRef, useMemo } = React;
 
 const SIZES = {
-  Facebook: [
-    { key: 'fb_post',    label: '動態貼文',    w: 1200, h: 630 },
-    { key: 'fb_story',   label: '限時動態',    w: 1080, h: 1920 },
-    { key: 'fb_cover',   label: '封面',        w: 820,  h: 312 },
-    { key: 'fb_square',  label: '方形',        w: 1080, h: 1080 },
+  '🛒 蝦皮': [
+    { key: 'shopee_1140x400', label: '1140×400', w: 1140, h: 400 },
+    { key: 'shopee_1200x500', label: '1200×500', w: 1200, h: 500 },
+    { key: 'shopee_480x360',  label: '480×360',  w: 480,  h: 360 },
+    { key: 'shopee_640x360',  label: '640×360',  w: 640,  h: 360 },
   ],
-  Instagram: [
-    { key: 'ig_square',    label: '方形',     w: 1080, h: 1080 },
-    { key: 'ig_portrait',  label: '直式',     w: 1080, h: 1350 },
-    { key: 'ig_story',     label: '限時動態', w: 1080, h: 1920 },
-    { key: 'ig_landscape', label: '橫式',     w: 1080, h: 608 },
+  '🛒 momo': [
+    { key: 'momo_818x370',  label: '818×370',  w: 818,  h: 370 },
+    { key: 'momo_852x426',  label: '852×426',  w: 852,  h: 426 },
+    { key: 'momo_1000x300', label: '1000×300', w: 1000, h: 300 },
+    { key: 'momo_780x380',  label: '780×380',  w: 780,  h: 380 },
   ],
-  '電商平台': [
-    { key: 'ec_800x600',   label: '800x600',   w: 800,  h: 600 },
-    { key: 'ec_1024x768',  label: '1024x768',  w: 1024, h: 768 },
-    { key: 'ec_banner',    label: '橫幅',      w: 1200, h: 300 },
-    { key: 'ec_square',    label: '方形',      w: 800,  h: 800 },
-    { key: 'ec_full',      label: '全寬',      w: 1920, h: 600 },
+  '🛒 PChome': [
+    { key: 'pchome_220x360', label: '220×360', w: 220, h: 360 },
+    { key: 'pchome_500x330', label: '500×330', w: 500, h: 330 },
+    { key: 'pchome_822x302', label: '822×302', w: 822, h: 302 },
+    { key: 'pchome_243x284', label: '243×284', w: 243, h: 284 },
+    { key: 'pchome_576x216', label: '576×216', w: 576, h: 216 },
+    { key: 'pchome_608x228', label: '608×228', w: 608, h: 228 },
+    { key: 'pchome_640x240', label: '640×240', w: 640, h: 240 },
   ],
-  'LINE/其他': [
-    { key: 'line_msg',  label: 'LINE圖文訊息', w: 1040, h: 700 },
-    { key: 'yt_thumb',  label: 'YouTube縮圖',  w: 1280, h: 720 },
+  '🛒 Yahoo': [
+    { key: 'yahoo_1200x600', label: '1200×600', w: 1200, h: 600 },
+    { key: 'yahoo_960x464',  label: '960×464',  w: 960,  h: 464 },
+    { key: 'yahoo_1080x345', label: '1080×345', w: 1080, h: 345 },
+    { key: 'yahoo_480x180',  label: '480×180',  w: 480,  h: 180 },
+    { key: 'yahoo_950x464',  label: '950×464',  w: 950,  h: 464 },
+  ],
+  '🛒 博客來': [
+    { key: 'books_764x229', label: '764×229', w: 764, h: 229 },
+    { key: 'books_240x240', label: '240×240', w: 240, h: 240 },
+    { key: 'books_621x312', label: '621×312', w: 621, h: 312 },
+    { key: 'books_790x226', label: '790×226', w: 790, h: 226 },
+    { key: 'books_950x250', label: '950×250', w: 950, h: 250 },
+  ],
+  '🛒 SHOPLINE / 官網': [
+    { key: 'shopline_1920x400', label: '1920×400', w: 1920, h: 400 },
+    { key: 'shopline_1920x896', label: '1920×896', w: 1920, h: 896 },
+  ],
+  '🛒 其他通路': [
+    { key: 'other_795x280',  label: '795×280',  w: 795,  h: 280 },
+    { key: 'other_190x250',  label: '190×250',  w: 190,  h: 250 },
+    { key: 'other_1260x320', label: '1260×320', w: 1260, h: 320 },
+    { key: 'other_750x328',  label: '750×328',  w: 750,  h: 328 },
+    { key: 'other_370x370',  label: '370×370',  w: 370,  h: 370 },
+    { key: 'other_960x540',  label: '960×540',  w: 960,  h: 540 },
+    { key: 'other_960x450',  label: '960×450',  w: 960,  h: 450 },
+  ],
+  '📣 社群貼文': [
+    { key: 'social_1080x1080', label: '1080×1080', w: 1080, h: 1080 },
+    { key: 'social_1040x1040', label: '1040×1040', w: 1040, h: 1040 },
+  ],
+  '📣 IG Story / 限動': [
+    { key: 'igstory_1080x1920', label: '1080×1920', w: 1080, h: 1920 },
+  ],
+  '📣 YouTube 封面': [
+    { key: 'yt_1920x1080', label: '1920×1080', w: 1920, h: 1080 },
+  ],
+  '📣 LINE 圖文選單': [
+    { key: 'line_1200x810', label: '1200×810', w: 1200, h: 810 },
+  ],
+  '📣 分享圖': [
+    { key: 'share_1200x630', label: '1200×630', w: 1200, h: 630 },
+  ],
+  '📣 活動 Icon': [
+    { key: 'icon_114x114', label: '114×114', w: 114, h: 114 },
+    { key: 'icon_240x240', label: '240×240', w: 240, h: 240 },
+  ],
+  '📣 活動主視覺': [
+    { key: 'visual_640x320',  label: '640×320',  w: 640,  h: 320 },
+    { key: 'visual_1920x400', label: '1920×400', w: 1920, h: 400 },
   ],
 };
 
@@ -358,7 +407,7 @@ function App() {
   const [marketing, setMarketing] = useState({
     caption: '🎧 抗噪降噪｜30小時長效續航\n旗艦音質超低延遲，限時下殺！',
     hashtags: '#特價 #耳機 #限時優惠 #蝦皮商城',
-    selectedSizes: ['fb_post', 'ig_square', 'ec_banner'],
+    selectedSizes: ['social_1080x1080', 'igstory_1080x1920', 'share_1200x630'],
   });
   const [design, setDesign] = useState({
     template: 't1',
