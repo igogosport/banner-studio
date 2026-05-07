@@ -749,7 +749,20 @@ async function generateAIFullDesign({ workerUrl, template, product, productImage
 
   // 品質與輸出
   promptParts.push('Style: professional 8k commercial photography, ultra-sharp, high contrast, magazine-quality composition. The provided product should be placed naturally with realistic shadows and ambient lighting matching the background scene.');
-  promptParts.push('IMPORTANT: Full-bleed rectangular banner with SQUARE/sharp corners (no rounded corners, no border, no frame, no padding around the design). The design must extend edge-to-edge.');
+
+  // ⚠️ 直角強化指令（多重強調避免 AI 自作主張畫圓角）
+  promptParts.push('CRITICAL CONSTRAINT — RECTANGULAR FULL-BLEED CANVAS:');
+  promptParts.push('• The image is a flat full-bleed digital banner that will be displayed EDGE-TO-EDGE on a website.');
+  promptParts.push('• ALL FOUR CORNERS must be perfectly sharp 90-degree right angles.');
+  promptParts.push('• ABSOLUTELY NO rounded corners, NO border, NO frame, NO outer padding, NO inner card shape, NO vignette darkening.');
+  promptParts.push('• The artwork must extend completely to all four edges of the image with sharp pixel-aligned corners.');
+  promptParts.push('• Imagine you are designing a full-screen webpage hero (NOT a card, NOT a modal, NOT a Polaroid).');
+
+  // ⚠️ 繁體中文強化指令
+  promptParts.push('CRITICAL LANGUAGE CONSTRAINT:');
+  promptParts.push('• ALL Chinese text MUST be in Traditional Chinese characters (繁體中文 / 正體中文), as used in Taiwan and Hong Kong.');
+  promptParts.push('• DO NOT use Simplified Chinese (简体中文). Examples: use 無線 (not 无线), 藍牙 (not 蓝牙), 限時搶購 (not 限时抢购), 主動降噪 (not 主动降噪), 長效續航 (not 长效续航), 30小時 (not 30小时).');
+  promptParts.push('• Spell every Chinese character exactly as written in the prompt above. Do not change, simplify, or substitute characters.');
 
   const prompt = promptParts.join(' ');
 
@@ -1315,11 +1328,22 @@ async function renderTemplate(canvas, w, h, template, content, productImg, logoI
   const typo = { ...template.typography, ...(overrides.typography || {}) };
   const base = Math.min(w, h); // typography baseline
 
-  // === Hero 完整設計模式：直接 cover-fit 整張 AI 圖，不疊加任何元件 ===
+  // === Hero 完整設計模式：只在目標比例接近 Hero 時直接 cover-fit ===
   const fullDesignImg = overrides.fullDesignImg;
   if (fullDesignImg) {
-    drawImageCover(ctx, fullDesignImg, 0, 0, w, h);
-    return; // 不畫任何文字 / 商品 / Logo
+    const heroAspect = fullDesignImg.width / fullDesignImg.height;
+    const targetAspect = w / h;
+    // 比例差距在 ±35% 內（即目標 aspect 在 0.65*hero ~ 1.5*hero 之間）→ 用 Hero
+    // 否則回到模板模式（避免極端裁切破壞構圖）
+    const ratioDiff = Math.abs(targetAspect / heroAspect - 1);
+    const useHero = ratioDiff <= 0.5; // 容忍 50% 比例差
+    if (useHero) {
+      // 微微放大 3% — 把 AI 可能畫出的圓角邊緣推出畫面，確保直角全幅
+      const inflate = 0.03;
+      drawImageCover(ctx, fullDesignImg, -w * inflate, -h * inflate, w * (1 + 2 * inflate), h * (1 + 2 * inflate));
+      return;
+    }
+    // 比例差太多 → fall through 到模板渲染（會用 customBg 或漸層 + Canvas 文字）
   }
 
   // === 背景層 ===
