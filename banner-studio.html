@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Banner Studio — 電商美編協作系統</title>
+<title>Banner Studio — 電商美編協作系統 · Design System v2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Bangers&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Bangers&family=Oswald:wght@500;700&family=Playfair+Display:wght@700;900&family=Montserrat:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -18,7 +18,7 @@
     color: #1a1a1a;
     min-height: 100vh;
   }
-  .app { display: grid; grid-template-columns: 380px 1fr 340px; height: 100vh; }
+  .app { display: grid; grid-template-columns: 380px 1fr 360px; height: 100vh; }
   .panel { overflow-y: auto; padding: 20px; background: #fff; border-right: 1px solid #e5e7eb; }
   .panel:last-child { border-right: 0; border-left: 1px solid #e5e7eb; }
   .preview-area { padding: 24px; background: linear-gradient(135deg, #eef0f4 0%, #dde3ec 100%); display: flex; flex-direction: column; align-items: center; overflow-y: auto; }
@@ -38,7 +38,6 @@
   input[type="color"] { width: 100%; height: 36px; padding: 2px; border: 1px solid #d5d8df; border-radius: 8px; cursor: pointer; }
   input[type="file"] { font-size: 12px; }
   .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
   .btn {
     width: 100%; padding: 12px; border: 0; border-radius: 10px;
     background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff;
@@ -46,26 +45,30 @@
     font-family: inherit;
   }
   .btn:hover { transform: translateY(-1px); }
-  .btn:active { transform: translateY(0); }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .btn-secondary { background: #f0f2f5; color: #1a1a1a; }
-  .template-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 8px; }
-  .template-card { padding: 12px 8px; border-radius: 8px; cursor: pointer; color: #fff; font-size: 12px; font-weight: 700; text-align: center; border: 2px solid transparent; transition: all 0.15s; }
-  .template-card.active { border-color: #1a1a1a; transform: scale(1.03); }
+  .template-gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+  .template-thumb {
+    aspect-ratio: 16/9; border-radius: 10px; cursor: pointer;
+    border: 2px solid transparent; overflow: hidden; position: relative;
+    transition: transform 0.15s, border-color 0.15s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .template-thumb:hover { transform: translateY(-2px); }
+  .template-thumb.active { border-color: #4f46e5; transform: scale(1.04); box-shadow: 0 4px 16px rgba(79,70,229,0.3); }
+  .template-thumb canvas { width: 100%; height: 100%; display: block; }
+  .template-name { position: absolute; bottom: 0; left: 0; right: 0; padding: 4px 8px; background: rgba(0,0,0,0.7); color: #fff; font-size: 11px; font-weight: 700; text-align: center; }
+  .category-filter { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0; }
+  .category-pill { padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; background: #f0f2f5; cursor: pointer; user-select: none; transition: all 0.15s; }
+  .category-pill.active { background: #1a1a1a; color: #fff; }
   .size-checkbox { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 6px; font-size: 12px; cursor: pointer; transition: background 0.15s; }
   .size-checkbox:hover { background: #f0f2f5; }
   .size-checkbox input { width: auto; }
   .size-group { margin-top: 6px; }
   .size-group-title { font-size: 11px; color: #777; font-weight: 700; padding: 4px 0; }
-  .preview-card { background: #fff; padding: 16px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); margin-bottom: 16px; }
-  .preview-canvas-wrap { position: relative; max-width: 720px; aspect-ratio: 1200/630; background: #ddd; border-radius: 12px; overflow: hidden; user-select: none; }
-  .draggable {
-    position: absolute; cursor: move; padding: 4px 8px; border: 2px dashed transparent;
-    transition: border-color 0.15s; pointer-events: auto;
-  }
-  .draggable:hover, .draggable.dragging { border-color: rgba(255,255,255,0.6); }
-  .preview-status { font-size: 13px; color: #555; margin-top: 8px; text-align: center; }
-  .toolbar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+  .preview-card { background: #fff; padding: 16px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); margin-bottom: 16px; width: 100%; max-width: 760px; }
+  .preview-canvas-wrap { max-width: 720px; aspect-ratio: 1200/630; background: #ddd; border-radius: 12px; overflow: hidden; }
+  .preview-canvas-wrap canvas { width: 100%; height: 100%; display: block; }
   .ratio-pill { background: #1a1a1a; color: #fff; font-size: 11px; padding: 4px 10px; border-radius: 999px; font-weight: 700; }
   .role-tag { display: inline-block; font-size: 11px; padding: 3px 8px; border-radius: 999px; font-weight: 700; margin-right: 6px; }
   .role-tag.shop { background: #fef3c7; color: #92400e; }
@@ -73,23 +76,57 @@
   .role-tag.design { background: #fce7f3; color: #be185d; }
   .progress { height: 4px; background: #e5e7eb; border-radius: 2px; overflow: hidden; margin-top: 12px; }
   .progress-bar { height: 100%; background: linear-gradient(90deg, #4f46e5, #7c3aed); transition: width 0.3s; }
-  .help-text { font-size: 11px; color: #888; margin-top: 4px; }
-  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .stat-grid { display: grid; gap: 8px; margin-top: 12px; }
   .stat { background: #f8f9fb; padding: 10px; border-radius: 8px; }
   .stat-num { font-size: 20px; font-weight: 900; color: #4f46e5; }
   .stat-label { font-size: 11px; color: #666; }
-  @media (max-width: 1100px) {
-    .app { grid-template-columns: 1fr; height: auto; }
-    .panel { border-right: 0; border-bottom: 1px solid #e5e7eb; }
-  }
+  .toolbar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+  .multi-preview { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-top: 8px; }
+  .multi-preview-item { background: #f0f2f5; border-radius: 8px; overflow: hidden; }
+  .multi-preview-item canvas { width: 100%; display: block; }
+  .multi-preview-label { padding: 4px 6px; font-size: 10px; color: #555; text-align: center; background: #fff; }
+  @media (max-width: 1100px) { .app { grid-template-columns: 1fr; height: auto; } .panel { border-right: 0; border-bottom: 1px solid #e5e7eb; } }
 </style>
 </head>
 <body>
 <div id="root"></div>
 
 <script type="text/babel">
-const { useState, useEffect, useRef, useMemo } = React;
+const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
+/* ============================================================
+   DESIGN TOKENS
+   ============================================================ */
+const TOKENS = {
+  // Safe zone — 元件不可超界（百分比相對於畫布）
+  safeZone: { x: 0.06, y: 0.07 },
+  // 圓角（相對於畫布短邊）
+  radius: { sm: 0.008, md: 0.018, lg: 0.04, pill: 999 },
+  // 陰影層級
+  shadow: {
+    1: { blur: 0.012, offsetY: 0.004, alpha: 0.18 },
+    2: { blur: 0.025, offsetY: 0.01,  alpha: 0.22 },
+    3: { blur: 0.05,  offsetY: 0.02,  alpha: 0.28 },
+  },
+};
+
+/* ============================================================
+   TYPOGRAPHY SCALE — 字級系統
+   size 是「相對於畫布短邊」的比例
+   ============================================================ */
+const TYPE_SCALE = {
+  hero:     { size: 0.18,  weight: 900, line: 1.0 },
+  title:    { size: 0.10,  weight: 800, line: 1.1 },
+  subtitle: { size: 0.048, weight: 500, line: 1.3 },
+  cta:      { size: 0.045, weight: 700, line: 1.0 },
+  badge:    { size: 0.038, weight: 800, line: 1.0 },
+  small:    { size: 0.035, weight: 500, line: 1.4 },
+  date:     { size: 0.030, weight: 600, line: 1.4 },
+};
+
+/* ============================================================
+   尺寸資料庫
+   ============================================================ */
 const SHOP_SIZES = {
   '🛒 蝦皮': [
     { key: 'shopee_1140x400', label: '1140×400', w: 1140, h: 400 },
@@ -170,24 +207,252 @@ const MARKET_SIZES = {
 
 const SIZES = { ...SHOP_SIZES, ...MARKET_SIZES };
 
-const TEMPLATES = {
-  t1: { name: '閃電特價', from: '#ff4500', to: '#ff8c00', angle: 135, badge: '⚡ 限時搶購', badgeBg: '#ffeb3b', badgeText: '#1a1a1a' },
-  t2: { name: '典雅黑金', from: '#1a1a1a', to: '#0d1b2a', angle: 135, badge: '★ 精選特價', badgeBg: '#d4af37', badgeText: '#1a1a1a' },
-  t3: { name: '活力藍調', from: '#00bfff', to: '#1e90ff', angle: 135, badge: '🔥 超殺優惠', badgeBg: '#ffffff', badgeText: '#1e90ff' },
-  t4: { name: '清新綠意', from: '#00b894', to: '#00cec9', angle: 135, badge: '🌿 優惠特賣', badgeBg: '#ffffff', badgeText: '#00b894' },
-  t5: { name: '午夜紫霞', from: '#6c5ce7', to: '#341f97', angle: 135, badge: '🌙 獨家優惠', badgeBg: '#fdcb6e', badgeText: '#341f97' },
-};
+/* ============================================================
+   10 商業級 Master Templates
+   每個模板包含：
+   - 多層背景（base / orbs / accent / noise / vignette）
+   - 完整色票
+   - 字型搭配
+   - 構圖（layout）
+   ============================================================ */
+const TEMPLATES = [
+  {
+    id: 'tech-flash', name: '科技閃電', emoji: '⚡', category: '科技',
+    layout: 'left-right',
+    bg: {
+      base:    { type: 'linear', colors: ['#0d1b2a', '#003566'], angle: 135 },
+      orbs:    [
+        { x: 0.85, y: 0.15, r: 0.55, color: '#00b4d8', alpha: 0.55 },
+        { x: 0.05, y: 1.0,  r: 0.45, color: '#7209b7', alpha: 0.35 },
+      ],
+      accent:  { type: 'grid-lines', color: 'rgba(255,255,255,0.04)' },
+      noise:   0.025,
+      vignette: 0.25,
+    },
+    palette: {
+      title: '#ffffff', subtitle: 'rgba(255,255,255,0.78)',
+      price: '#ffeb3b', priceOriginal: 'rgba(255,255,255,0.55)',
+      badgeBg: '#ffeb3b', badgeText: '#0d1b2a',
+      ctaBg: '#ffeb3b', ctaText: '#0d1b2a',
+      date: 'rgba(255,255,255,0.85)',
+      productGlow: '#00d4ff',
+    },
+    typography: { titleFont: 'Anton', priceFont: 'Anton', subFont: 'Noto Sans TC' },
+    defaults: { badge: '⚡ 限時搶購', cta: '立即搶購 →' },
+  },
+  {
+    id: 'lux-noir', name: '精品黑金', emoji: '💎', category: '精品',
+    layout: 'center-hero',
+    bg: {
+      base:    { type: 'linear', colors: ['#0a0a0a', '#1a1a2e'], angle: 180 },
+      orbs:    [
+        { x: 0.5, y: 0.0,  r: 0.6, color: '#d4af37', alpha: 0.30 },
+      ],
+      noise:   0.02,
+      vignette: 0.45,
+    },
+    palette: {
+      title: '#ffffff', subtitle: 'rgba(212,175,55,0.85)',
+      price: '#d4af37', priceOriginal: 'rgba(255,255,255,0.45)',
+      badgeBg: '#d4af37', badgeText: '#0a0a0a',
+      ctaBg: '#d4af37', ctaText: '#0a0a0a',
+      date: 'rgba(255,255,255,0.7)',
+      productGlow: '#d4af37',
+    },
+    typography: { titleFont: 'Playfair Display', priceFont: 'Playfair Display', subFont: 'Noto Serif TC' },
+    defaults: { badge: '★ 精選典藏', cta: '立即典藏 →' },
+  },
+  {
+    id: 'esports', name: '電競霓虹', emoji: '🎮', category: '電競',
+    layout: 'left-right',
+    bg: {
+      base:    { type: 'linear', colors: ['#000000', '#1a0033'], angle: 135 },
+      orbs:    [
+        { x: 0.95, y: 0.1, r: 0.55, color: '#ff006e', alpha: 0.6 },
+        { x: 0.0,  y: 1.0, r: 0.55, color: '#00f5ff', alpha: 0.55 },
+      ],
+      accent:  { type: 'diagonal-stripe', color: 'rgba(255,0,110,0.12)' },
+      noise:   0.05,
+      vignette: 0.3,
+    },
+    palette: {
+      title: '#ffffff', subtitle: '#00f5ff',
+      price: '#00f5ff', priceOriginal: 'rgba(255,255,255,0.5)',
+      badgeBg: '#ff006e', badgeText: '#ffffff',
+      ctaBg: '#00f5ff', ctaText: '#000000',
+      date: 'rgba(255,255,255,0.8)',
+      productGlow: '#ff006e',
+      titleGlow: '#ff006e',
+    },
+    typography: { titleFont: 'Bebas Neue', priceFont: 'Bebas Neue', subFont: 'Oswald' },
+    defaults: { badge: '🎮 GAME ON', cta: 'PLAY NOW →' },
+  },
+  {
+    id: 'vibrant', name: '活力青春', emoji: '🌈', category: '活力',
+    layout: 'right-left',
+    bg: {
+      base:    { type: 'linear', colors: ['#ff006e', '#ffb700'], angle: 135 },
+      orbs:    [
+        { x: 0.15, y: 0.15, r: 0.5, color: '#ffffff', alpha: 0.25 },
+      ],
+      noise:   0.02,
+      vignette: 0.15,
+    },
+    palette: {
+      title: '#ffffff', subtitle: 'rgba(255,255,255,0.92)',
+      price: '#ffffff', priceOriginal: 'rgba(255,255,255,0.7)',
+      badgeBg: '#ffffff', badgeText: '#ff006e',
+      ctaBg: '#ffffff', ctaText: '#ff006e',
+      date: 'rgba(255,255,255,0.9)',
+      productGlow: '#ffeb3b',
+    },
+    typography: { titleFont: 'Montserrat', priceFont: 'Anton', subFont: 'Noto Sans TC' },
+    defaults: { badge: '🔥 超值優惠', cta: '立即購買 →' },
+  },
+  {
+    id: 'beauty', name: '美妝粉嫩', emoji: '🎀', category: '美妝',
+    layout: 'center-hero',
+    bg: {
+      base:    { type: 'linear', colors: ['#ffd6e8', '#ffe5ec'], angle: 180 },
+      orbs:    [
+        { x: 0.5,  y: 0.0,  r: 0.55, color: '#ffffff', alpha: 0.5 },
+        { x: 0.85, y: 0.85, r: 0.4,  color: '#e0a8ad', alpha: 0.35 },
+      ],
+      noise:   0.015,
+      vignette: 0.12,
+    },
+    palette: {
+      title: '#880e4f', subtitle: '#ad1457',
+      price: '#880e4f', priceOriginal: 'rgba(136,14,79,0.5)',
+      badgeBg: '#c2185b', badgeText: '#ffffff',
+      ctaBg: '#880e4f', ctaText: '#ffffff',
+      date: '#880e4f',
+      productGlow: '#ffffff',
+    },
+    typography: { titleFont: 'Playfair Display', priceFont: 'Playfair Display', subFont: 'Noto Serif TC' },
+    defaults: { badge: '🌸 精選美妝', cta: '立即選購 →' },
+  },
+  {
+    id: 'wellness', name: '健康清新', emoji: '🌿', category: '健康',
+    layout: 'left-right',
+    bg: {
+      base:    { type: 'linear', colors: ['#a8e6cf', '#dcedc1'], angle: 135 },
+      orbs:    [
+        { x: 0.5, y: 0.5, r: 0.6, color: '#ffffff', alpha: 0.4 },
+      ],
+      noise:   0.018,
+      vignette: 0.1,
+    },
+    palette: {
+      title: '#1b5e20', subtitle: '#2e7d32',
+      price: '#2e7d32', priceOriginal: 'rgba(27,94,32,0.5)',
+      badgeBg: '#43a047', badgeText: '#ffffff',
+      ctaBg: '#2e7d32', ctaText: '#ffffff',
+      date: '#1b5e20',
+      productGlow: '#ffffff',
+    },
+    typography: { titleFont: 'Montserrat', priceFont: 'Anton', subFont: 'Noto Sans TC' },
+    defaults: { badge: '🌿 天然優選', cta: '立即了解 →' },
+  },
+  {
+    id: 'food', name: '美味食慾', emoji: '🍰', category: '美食',
+    layout: 'top-bottom',
+    bg: {
+      base:    { type: 'linear', colors: ['#ff7e5f', '#feb47b'], angle: 180 },
+      orbs:    [
+        { x: 0.2, y: 0.1, r: 0.5, color: '#ffe066', alpha: 0.5 },
+        { x: 0.8, y: 1.0, r: 0.4, color: '#fff5e1', alpha: 0.5 },
+      ],
+      noise:   0.03,
+      vignette: 0.18,
+    },
+    palette: {
+      title: '#ffffff', subtitle: 'rgba(255,255,255,0.92)',
+      price: '#ffffff', priceOriginal: 'rgba(255,255,255,0.7)',
+      badgeBg: '#d32f2f', badgeText: '#ffffff',
+      ctaBg: '#d32f2f', ctaText: '#ffffff',
+      date: 'rgba(255,255,255,0.9)',
+      productGlow: '#fff5e1',
+    },
+    typography: { titleFont: 'Bangers', priceFont: 'Anton', subFont: 'Noto Sans TC' },
+    defaults: { badge: '🔥 熱銷', cta: '立刻嚐鮮 →' },
+  },
+  {
+    id: 'festive', name: '節慶限定', emoji: '🎄', category: '節慶',
+    layout: 'center-hero',
+    bg: {
+      base:    { type: 'linear', colors: ['#5b0000', '#1a0000'], angle: 135 },
+      orbs:    [
+        { x: 0.5,  y: 0.05, r: 0.55, color: '#ffd700', alpha: 0.4 },
+        { x: 0.15, y: 0.9,  r: 0.4,  color: '#ffd700', alpha: 0.2 },
+      ],
+      accent:  { type: 'sparkle', color: '#ffd700' },
+      noise:   0.02,
+      vignette: 0.3,
+    },
+    palette: {
+      title: '#ffd700', subtitle: 'rgba(255,255,255,0.85)',
+      price: '#ffffff', priceOriginal: 'rgba(255,215,0,0.55)',
+      badgeBg: '#ffd700', badgeText: '#5b0000',
+      ctaBg: '#ffd700', ctaText: '#5b0000',
+      date: 'rgba(255,215,0,0.9)',
+      productGlow: '#ffd700',
+    },
+    typography: { titleFont: 'Playfair Display', priceFont: 'Anton', subFont: 'Noto Serif TC' },
+    defaults: { badge: '✨ 節慶限定', cta: '立即把握 →' },
+  },
+  {
+    id: 'home', name: '居家溫馨', emoji: '🏠', category: 'Lifestyle',
+    layout: 'right-left',
+    bg: {
+      base:    { type: 'linear', colors: ['#f5f0e8', '#e8dcc9'], angle: 180 },
+      orbs:    [
+        { x: 0.9, y: 0.1, r: 0.5, color: '#fff8ee', alpha: 0.7 },
+      ],
+      noise:   0.022,
+      vignette: 0.15,
+    },
+    palette: {
+      title: '#3e2723', subtitle: '#5d4037',
+      price: '#3e2723', priceOriginal: 'rgba(62,39,35,0.5)',
+      badgeBg: '#5d4037', badgeText: '#fff8ee',
+      ctaBg: '#3e2723', ctaText: '#fff8ee',
+      date: '#5d4037',
+      productGlow: '#fff8ee',
+    },
+    typography: { titleFont: 'Playfair Display', priceFont: 'Playfair Display', subFont: 'Noto Serif TC' },
+    defaults: { badge: '☕ 溫馨居家', cta: '了解更多 →' },
+  },
+  {
+    id: 'kids', name: '親子童趣', emoji: '🎈', category: '親子',
+    layout: 'left-right',
+    bg: {
+      base:    { type: 'linear', colors: ['#a8e6e3', '#ffd1dc'], angle: 135 },
+      orbs:    [
+        { x: 0.85, y: 0.15, r: 0.45, color: '#fffacd', alpha: 0.6 },
+        { x: 0.1,  y: 0.9,  r: 0.4,  color: '#ffb6c1', alpha: 0.55 },
+      ],
+      noise:   0.018,
+      vignette: 0.1,
+    },
+    palette: {
+      title: '#1a237e', subtitle: '#3949ab',
+      price: '#ff5722', priceOriginal: 'rgba(26,35,126,0.5)',
+      badgeBg: '#ff5722', badgeText: '#ffffff',
+      ctaBg: '#1a237e', ctaText: '#ffffff',
+      date: '#1a237e',
+      productGlow: '#fffacd',
+    },
+    typography: { titleFont: 'Bangers', priceFont: 'Anton', subFont: 'Noto Sans TC' },
+    defaults: { badge: '🎈 童趣優選', cta: '立即發現 →' },
+  },
+];
 
-const FONTS = ['Anton', 'Bebas Neue', 'Bangers', 'Noto Sans TC'];
+const CATEGORIES = ['全部', '科技', '精品', '電競', '活力', '美妝', '健康', '美食', '節慶', 'Lifestyle', '親子'];
 
-const DEFAULT_POSITIONS = {
-  badge:   { x: 5,  y: 5  },
-  title:   { x: 5,  y: 22 },
-  price:   { x: 5,  y: 68 },
-  date:    { x: 60, y: 78 },
-  product: { x: 60, y: 4  },
-};
-
+/* ============================================================
+   工具函式
+   ============================================================ */
 const fileToDataURL = (file) => new Promise((resolve, reject) => {
   const r = new FileReader();
   r.onload = () => resolve(r.result);
@@ -226,169 +491,33 @@ function drawImageCover(ctx, img, x, y, w, h) {
   ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
 }
 
-async function renderToCanvas(canvas, w, h, config, productImg, customBgImg) {
-  canvas.width = w; canvas.height = h;
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, w, h);
-
-  // Background
-  if (customBgImg) {
-    drawImageCover(ctx, customBgImg, 0, 0, w, h);
-    ctx.fillStyle = 'rgba(0,0,0,0.18)';
-    ctx.fillRect(0, 0, w, h);
-  } else {
-    const t = TEMPLATES[config.template];
-    const a = (t.angle - 90) * Math.PI / 180;
-    const cx = w/2, cy = h/2;
-    const len = Math.max(w, h);
-    const x1 = cx - Math.cos(a) * len/2;
-    const y1 = cy - Math.sin(a) * len/2;
-    const x2 = cx + Math.cos(a) * len/2;
-    const y2 = cy + Math.sin(a) * len/2;
-    const grad = ctx.createLinearGradient(x1, y1, x2, y2);
-    grad.addColorStop(0, t.from);
-    grad.addColorStop(1, t.to);
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, w, h);
-  }
-
-  // Product image
-  if (productImg) {
-    const pos = config.positions.product;
-    const px = w * pos.x / 100;
-    const py = h * pos.y / 100;
-    const pw = Math.min(w * 0.36, w - px - 16);
-    const ph = pw;
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.35)';
-    ctx.shadowBlur = Math.max(20, w * 0.02);
-    ctx.shadowOffsetY = Math.max(10, w * 0.01);
-    roundRect(ctx, px, py, pw, ph, Math.max(16, w * 0.015));
-    ctx.fillStyle = '#fff';
-    ctx.fill();
-    ctx.restore();
-    ctx.save();
-    roundRect(ctx, px, py, pw, ph, Math.max(16, w * 0.015));
-    ctx.clip();
-    drawImageCover(ctx, productImg, px, py, pw, ph);
-    ctx.restore();
-  }
-
-  // Helper: scale font size relative to canvas
-  const sz = (pct) => Math.max(12, h * pct);
-
-  // Badge
-  const badgeText = config.badgeText || (TEMPLATES[config.template] && TEMPLATES[config.template].badge) || '';
-  if (badgeText) {
-    const pos = config.positions.badge;
-    const fs = sz(0.045);
-    ctx.font = `900 ${fs}px "${config.fonts.badge}", "Noto Sans TC", sans-serif`;
-    const padX = fs * 0.6, padY = fs * 0.35;
-    const metrics = ctx.measureText(badgeText);
-    const bw = metrics.width + padX * 2;
-    const bh = fs + padY * 2;
-    const bx = w * pos.x / 100;
-    const by = h * pos.y / 100;
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.25)';
-    ctx.shadowBlur = 10;
-    ctx.shadowOffsetY = 3;
-    roundRect(ctx, bx, by, bw, bh, bh/2);
-    ctx.fillStyle = config.colors.badgeBg;
-    ctx.fill();
-    ctx.restore();
-    ctx.fillStyle = config.colors.badgeText;
-    ctx.textBaseline = 'middle';
-    ctx.fillText(badgeText, bx + padX, by + bh/2);
-  }
-
-  // Title
-  if (config.product.name) {
-    const pos = config.positions.title;
-    const fs = sz(0.075);
-    ctx.font = `900 ${fs}px "${config.fonts.title}", "Noto Sans TC", sans-serif`;
-    ctx.fillStyle = config.colors.title;
-    ctx.textBaseline = 'top';
-    const tx = w * pos.x / 100;
-    const ty = h * pos.y / 100;
-    const maxW = w * 0.55;
-    const lines = wrapText(ctx, config.product.name, maxW);
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.4)';
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetY = 2;
-    lines.forEach((line, i) => ctx.fillText(line, tx, ty + i * fs * 1.1));
-    ctx.restore();
-  }
-
-  // Price
-  if (config.product.salePrice) {
-    const pos = config.positions.price;
-    const px = w * pos.x / 100;
-    const py = h * pos.y / 100;
-    if (config.product.originalPrice) {
-      const ofs = sz(0.04);
-      ctx.font = `700 ${ofs}px "${config.fonts.price}", "Noto Sans TC", sans-serif`;
-      ctx.fillStyle = config.colors.price;
-      ctx.globalAlpha = 0.7;
-      ctx.textBaseline = 'top';
-      const oText = `原價 $${config.product.originalPrice}`;
-      ctx.fillText(oText, px, py);
-      const om = ctx.measureText(oText);
-      ctx.strokeStyle = config.colors.price;
-      ctx.lineWidth = Math.max(2, ofs * 0.08);
-      ctx.beginPath();
-      ctx.moveTo(px, py + ofs * 0.55);
-      ctx.lineTo(px + om.width, py + ofs * 0.55);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
-    const fs = sz(0.13);
-    ctx.font = `900 ${fs}px "${config.fonts.price}", "Noto Sans TC", sans-serif`;
-    ctx.fillStyle = config.colors.price;
-    ctx.textBaseline = 'top';
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.35)';
-    ctx.shadowBlur = 10;
-    ctx.shadowOffsetY = 3;
-    const offsetY = config.product.originalPrice ? sz(0.05) : 0;
-    ctx.fillText(`$${config.product.salePrice}`, px, py + offsetY);
-    ctx.restore();
-  }
-
-  // Date
-  if (config.product.startDate || config.product.endDate) {
-    const pos = config.positions.date;
-    const fs = sz(0.035);
-    ctx.font = `700 ${fs}px "${config.fonts.date}", "Noto Sans TC", sans-serif`;
-    ctx.fillStyle = config.colors.date;
-    ctx.textBaseline = 'top';
-    const dx = w * pos.x / 100;
-    const dy = h * pos.y / 100;
-    let dateStr = '';
-    if (config.product.startDate && config.product.endDate) {
-      dateStr = `📅 ${config.product.startDate} ～ ${config.product.endDate}`;
-    } else if (config.product.startDate) {
-      dateStr = `📅 ${config.product.startDate} 起`;
-    } else {
-      dateStr = `📅 ～ ${config.product.endDate}`;
-    }
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.35)';
-    ctx.shadowBlur = 6;
-    ctx.shadowOffsetY = 2;
-    ctx.fillText(dateStr, dx, dy);
-    ctx.restore();
-  }
+function drawImageContain(ctx, img, x, y, w, h) {
+  const ir = img.width / img.height;
+  const tr = w / h;
+  let dx, dy, dw, dh;
+  if (ir > tr) { dw = w; dh = dw / ir; dx = x; dy = y + (h - dh)/2; }
+  else { dh = h; dw = dh * ir; dx = x + (w - dw)/2; dy = y; }
+  ctx.drawImage(img, dx, dy, dw, dh);
+  return { dx, dy, dw, dh };
 }
 
-function wrapText(ctx, text, maxWidth) {
+function wrapText(ctx, text, maxWidth, maxLines = 2) {
   const lines = [];
   let cur = '';
   for (const ch of text) {
     const trial = cur + ch;
     if (ctx.measureText(trial).width > maxWidth && cur) {
       lines.push(cur);
+      if (lines.length === maxLines) {
+        // Add ellipsis on last line if more text remains
+        const remaining = text.slice(text.indexOf(ch));
+        if (remaining.length > 1) {
+          let last = lines[lines.length - 1];
+          while (ctx.measureText(last + '…').width > maxWidth && last.length) last = last.slice(0, -1);
+          lines[lines.length - 1] = last + '…';
+        }
+        return lines;
+      }
       cur = ch;
     } else {
       cur = trial;
@@ -398,16 +527,543 @@ function wrapText(ctx, text, maxWidth) {
   return lines;
 }
 
+/* ============================================================
+   BACKGROUND SYSTEM — 多層商業級背景
+   ============================================================ */
+function drawBaseBackground(ctx, base, w, h) {
+  if (base.type === 'linear') {
+    const a = (base.angle - 90) * Math.PI / 180;
+    const len = Math.max(w, h);
+    const cx = w/2, cy = h/2;
+    const grad = ctx.createLinearGradient(
+      cx - Math.cos(a) * len/2, cy - Math.sin(a) * len/2,
+      cx + Math.cos(a) * len/2, cy + Math.sin(a) * len/2
+    );
+    base.colors.forEach((c, i) => grad.addColorStop(i / (base.colors.length - 1), c));
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+  } else if (base.type === 'radial') {
+    const grad = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, Math.max(w, h));
+    base.colors.forEach((c, i) => grad.addColorStop(i / (base.colors.length - 1), c));
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+  }
+}
+
+function drawOrb(ctx, orb, w, h) {
+  const cx = orb.x * w;
+  const cy = orb.y * h;
+  const radius = orb.r * Math.max(w, h);
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+  // 把顏色轉成 rgba 帶 alpha
+  const c = hexToRgb(orb.color);
+  grad.addColorStop(0, `rgba(${c.r},${c.g},${c.b},${orb.alpha})`);
+  grad.addColorStop(1, `rgba(${c.r},${c.g},${c.b},0)`);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+  ctx.restore();
+}
+
+function drawAccent(ctx, accent, w, h) {
+  if (!accent) return;
+  if (accent.type === 'grid-lines') {
+    ctx.save();
+    ctx.strokeStyle = accent.color;
+    ctx.lineWidth = 1;
+    const step = Math.max(40, w / 30);
+    for (let x = 0; x < w; x += step) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+    for (let y = 0; y < h; y += step) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+    ctx.restore();
+  } else if (accent.type === 'diagonal-stripe') {
+    ctx.save();
+    ctx.fillStyle = accent.color;
+    ctx.beginPath();
+    ctx.moveTo(0, h * 0.3);
+    ctx.lineTo(w, 0);
+    ctx.lineTo(w, h * 0.15);
+    ctx.lineTo(0, h * 0.5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  } else if (accent.type === 'sparkle') {
+    ctx.save();
+    ctx.fillStyle = accent.color;
+    const count = Math.max(8, Math.floor((w * h) / 50000));
+    // 用固定 seed 讓每次產出一致
+    let seed = 42;
+    const rand = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+    for (let i = 0; i < count; i++) {
+      const x = rand() * w;
+      const y = rand() * h;
+      const s = (rand() * 0.005 + 0.002) * Math.max(w, h);
+      ctx.globalAlpha = rand() * 0.6 + 0.2;
+      // 四角星
+      ctx.beginPath();
+      ctx.moveTo(x, y - s);
+      ctx.lineTo(x + s * 0.3, y - s * 0.3);
+      ctx.lineTo(x + s, y);
+      ctx.lineTo(x + s * 0.3, y + s * 0.3);
+      ctx.lineTo(x, y + s);
+      ctx.lineTo(x - s * 0.3, y + s * 0.3);
+      ctx.lineTo(x - s, y);
+      ctx.lineTo(x - s * 0.3, y - s * 0.3);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+function drawNoise(ctx, intensity, w, h) {
+  if (!intensity) return;
+  const cellSize = 2;
+  const cols = Math.ceil(w / cellSize);
+  const rows = Math.ceil(h / cellSize);
+  ctx.save();
+  ctx.globalAlpha = intensity;
+  let seed = 7;
+  const rand = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  for (let i = 0; i < cols; i++) {
+    for (let j = 0; j < rows; j++) {
+      const v = Math.floor(rand() * 255);
+      ctx.fillStyle = `rgb(${v},${v},${v})`;
+      ctx.fillRect(i * cellSize, j * cellSize, cellSize, cellSize);
+    }
+  }
+  ctx.restore();
+}
+
+function drawVignette(ctx, intensity, w, h) {
+  if (!intensity) return;
+  const grad = ctx.createRadialGradient(w/2, h/2, Math.min(w, h) * 0.3, w/2, h/2, Math.max(w, h) * 0.7);
+  grad.addColorStop(0, 'rgba(0,0,0,0)');
+  grad.addColorStop(1, `rgba(0,0,0,${intensity})`);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+}
+
+function hexToRgb(hex) {
+  const m = hex.replace('#', '').match(/.{2}/g);
+  if (!m) return { r: 255, g: 255, b: 255 };
+  return { r: parseInt(m[0], 16), g: parseInt(m[1], 16), b: parseInt(m[2], 16) };
+}
+
+/* ============================================================
+   COMPOSITION ENGINE — 構圖計算
+   依據模板的 layout 與畫布尺寸，計算每個元件的位置
+   ============================================================ */
+function computeLayout(template, w, h) {
+  const aspect = w / h;
+  const isWide = aspect >= 1.6;
+  const isTall = aspect <= 0.75;
+  const isUltraThin = aspect <= 0.45 || aspect >= 4.0;
+  const tiny = Math.min(w, h) < 200;
+
+  const safeX = w * TOKENS.safeZone.x;
+  const safeY = h * TOKENS.safeZone.y;
+
+  // 對於極端尺寸（很窄或很扁、icon），強制 center-hero 並縮小元素
+  let layout = template.layout;
+  if (isUltraThin || tiny) layout = 'center-hero';
+  else if (isTall) layout = layout === 'center-hero' ? 'center-hero' : 'top-bottom';
+
+  // 各構圖的位置定義
+  const L = {};
+
+  if (layout === 'left-right') {
+    // 文字左 / 商品右
+    L.product   = { x: w * 0.55, y: h * 0.06, w: w * 0.40, h: h * 0.88 };
+    L.textLeft  = w * 0.06;
+    L.textWidth = w * 0.45;
+    L.title     = { x: L.textLeft, y: h * 0.20, w: L.textWidth };
+    L.subtitle  = { x: L.textLeft, y: h * 0.44, w: L.textWidth };
+    L.price     = { x: L.textLeft, y: h * 0.55 };
+    L.priceOrig = { x: L.textLeft, y: h * 0.50 };
+    L.badge     = { x: L.textLeft, y: h * 0.10 };
+    L.cta       = { x: L.textLeft, y: h * 0.80 };
+    L.date      = { x: L.textLeft, y: h * 0.90 };
+    L.logo      = { x: w * 0.85, y: h * 0.06, w: w * 0.10, h: h * 0.10, anchor: 'tr' };
+  } else if (layout === 'right-left') {
+    // 商品左 / 文字右
+    L.product   = { x: w * 0.05, y: h * 0.06, w: w * 0.40, h: h * 0.88 };
+    L.textLeft  = w * 0.49;
+    L.textWidth = w * 0.45;
+    L.title     = { x: L.textLeft, y: h * 0.20, w: L.textWidth };
+    L.subtitle  = { x: L.textLeft, y: h * 0.44, w: L.textWidth };
+    L.price     = { x: L.textLeft, y: h * 0.55 };
+    L.priceOrig = { x: L.textLeft, y: h * 0.50 };
+    L.badge     = { x: L.textLeft, y: h * 0.10 };
+    L.cta       = { x: L.textLeft, y: h * 0.80 };
+    L.date      = { x: L.textLeft, y: h * 0.90 };
+    L.logo      = { x: w * 0.05, y: h * 0.06, w: w * 0.10, h: h * 0.10, anchor: 'tl' };
+  } else if (layout === 'center-hero') {
+    // 商品上 / 文字下（中心對齊）
+    const productH = isTall ? h * 0.45 : h * 0.55;
+    L.product   = { x: w * 0.20, y: h * 0.04, w: w * 0.60, h: productH };
+    L.textLeft  = safeX;
+    L.textWidth = w - 2 * safeX;
+    const textTop = h * 0.04 + productH + h * 0.04;
+    L.badge     = { x: w * 0.5, y: textTop, anchor: 'center' };
+    L.title     = { x: w * 0.5, y: textTop + h * 0.07, w: L.textWidth, anchor: 'center' };
+    L.subtitle  = { x: w * 0.5, y: textTop + h * 0.20, w: L.textWidth, anchor: 'center' };
+    L.priceOrig = { x: w * 0.5, y: textTop + h * 0.30, anchor: 'center' };
+    L.price     = { x: w * 0.5, y: textTop + h * 0.34, anchor: 'center' };
+    L.cta       = { x: w * 0.5, y: textTop + h * 0.50, anchor: 'center' };
+    L.date      = { x: w * 0.5, y: h - safeY, anchor: 'center' };
+    L.logo      = { x: w * 0.5, y: safeY, w: w * 0.20, h: h * 0.08, anchor: 'tc' };
+  } else if (layout === 'top-bottom') {
+    // 文字上 / 商品下（適合 IG Story 等高版面）
+    const textBottom = h * 0.45;
+    L.title     = { x: w * 0.5, y: h * 0.10, w: w * 0.88, anchor: 'center' };
+    L.subtitle  = { x: w * 0.5, y: h * 0.22, w: w * 0.88, anchor: 'center' };
+    L.badge     = { x: w * 0.5, y: h * 0.04, anchor: 'center' };
+    L.priceOrig = { x: w * 0.5, y: h * 0.30, anchor: 'center' };
+    L.price     = { x: w * 0.5, y: h * 0.35, anchor: 'center' };
+    L.product   = { x: w * 0.15, y: textBottom, w: w * 0.70, h: h * 0.45 };
+    L.cta       = { x: w * 0.5, y: h * 0.93, anchor: 'center' };
+    L.date      = { x: w * 0.5, y: h * 0.97, anchor: 'center' };
+    L.logo      = { x: w * 0.5, y: safeY, w: w * 0.18, h: h * 0.05, anchor: 'tc' };
+  }
+
+  L.tiny = tiny;
+  L.isUltraThin = isUltraThin;
+  L.isTall = isTall;
+  L.isWide = isWide;
+  L.layout = layout;
+  return L;
+}
+
+/* ============================================================
+   PRODUCT INTEGRATION — 商品融合（陰影、發光、地面反射）
+   ============================================================ */
+function drawProductWithEffects(ctx, img, box, template) {
+  if (!img || !box) return;
+
+  const { x, y, w, h } = box;
+  const r = TOKENS.radius.lg * Math.min(w, h);
+
+  // 計算商品在 box 中的實際 contain 位置
+  const ir = img.width / img.height;
+  const br = w / h;
+  let dx, dy, dw, dh;
+  if (ir > br) { dw = w; dh = dw / ir; dx = x; dy = y + (h - dh) / 2; }
+  else { dh = h; dw = dh * ir; dx = x + (w - dw) / 2; dy = y; }
+
+  // Layer 1: 商品色彩 glow（背後光暈，融入背景）
+  if (template.palette.productGlow) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    const c = hexToRgb(template.palette.productGlow);
+    const grad = ctx.createRadialGradient(dx + dw/2, dy + dh/2, 0, dx + dw/2, dy + dh/2, Math.max(dw, dh) * 0.7);
+    grad.addColorStop(0, `rgba(${c.r},${c.g},${c.b},0.45)`);
+    grad.addColorStop(0.5, `rgba(${c.r},${c.g},${c.b},0.15)`);
+    grad.addColorStop(1, `rgba(${c.r},${c.g},${c.b},0)`);
+    ctx.fillStyle = grad;
+    ctx.fillRect(dx - dw * 0.3, dy - dh * 0.3, dw * 1.6, dh * 1.6);
+    ctx.restore();
+  }
+
+  // Layer 2: 地面反射陰影（drop shadow + 模糊投影）
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.45)';
+  ctx.shadowBlur = Math.max(20, dh * 0.06);
+  ctx.shadowOffsetY = Math.max(8, dh * 0.025);
+  ctx.fillStyle = 'rgba(0,0,0,0.001)';
+  ctx.beginPath();
+  ctx.ellipse(dx + dw/2, dy + dh + dh * 0.02, dw * 0.4, dh * 0.04, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Layer 3: 圓角白底（讓 PNG 透明背景商品也有底襯）
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.25)';
+  ctx.shadowBlur = Math.max(15, dh * 0.04);
+  ctx.shadowOffsetY = Math.max(6, dh * 0.015);
+  // 不畫底色，讓商品直接顯示（保留原本透明度）
+  ctx.restore();
+
+  // Layer 4: 商品本體
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.3)';
+  ctx.shadowBlur = Math.max(12, dh * 0.03);
+  ctx.shadowOffsetY = Math.max(4, dh * 0.012);
+  ctx.drawImage(img, dx, dy, dw, dh);
+  ctx.restore();
+}
+
+/* ============================================================
+   TEXT DRAWING — 字體系統繪製
+   ============================================================ */
+function makeFont(scale, font, base, weight) {
+  const size = Math.max(10, scale.size * base);
+  return {
+    fontStr: `${weight || scale.weight} ${size}px "${font}", "Noto Sans TC", sans-serif`,
+    size,
+    line: scale.line,
+  };
+}
+
+function drawText(ctx, text, opts) {
+  if (!text) return 0;
+  const { font, color, x, y, anchor = 'left', maxWidth, maxLines = 2, glow, shadow } = opts;
+  ctx.font = font.fontStr;
+  ctx.fillStyle = color;
+  ctx.textBaseline = 'top';
+  const align = anchor === 'center' ? 'center' : 'left';
+  ctx.textAlign = align;
+
+  let lines = [text];
+  if (maxWidth) lines = wrapText(ctx, text, maxWidth, maxLines);
+
+  ctx.save();
+  if (glow) {
+    ctx.shadowColor = glow;
+    ctx.shadowBlur = font.size * 0.3;
+  } else if (shadow) {
+    ctx.shadowColor = shadow;
+    ctx.shadowBlur = font.size * 0.18;
+    ctx.shadowOffsetY = font.size * 0.04;
+  }
+  lines.forEach((line, i) => {
+    ctx.fillText(line, x, y + i * font.size * font.line);
+  });
+  ctx.restore();
+  return lines.length * font.size * font.line;
+}
+
+function drawBadge(ctx, text, pos, palette, base) {
+  if (!text || !pos) return;
+  const font = makeFont(TYPE_SCALE.badge, 'Noto Sans TC', base);
+  ctx.font = font.fontStr;
+  const padX = font.size * 0.7, padY = font.size * 0.35;
+  const m = ctx.measureText(text);
+  const bw = m.width + padX * 2;
+  const bh = font.size + padY * 2;
+  let bx = pos.x;
+  if (pos.anchor === 'center') bx = pos.x - bw / 2;
+  const by = pos.y;
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.25)';
+  ctx.shadowBlur = font.size * 0.3;
+  ctx.shadowOffsetY = font.size * 0.08;
+  roundRect(ctx, bx, by, bw, bh, bh / 2);
+  ctx.fillStyle = palette.badgeBg;
+  ctx.fill();
+  ctx.restore();
+
+  ctx.fillStyle = palette.badgeText;
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.fillText(text, bx + padX, by + bh / 2);
+}
+
+function drawCTA(ctx, text, pos, palette, base) {
+  if (!text || !pos) return;
+  const font = makeFont(TYPE_SCALE.cta, 'Montserrat', base);
+  ctx.font = font.fontStr;
+  const padX = font.size * 1.1, padY = font.size * 0.55;
+  const m = ctx.measureText(text);
+  const bw = m.width + padX * 2;
+  const bh = font.size + padY * 2;
+  let bx = pos.x;
+  if (pos.anchor === 'center') bx = pos.x - bw / 2;
+  const by = pos.y;
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.35)';
+  ctx.shadowBlur = font.size * 0.4;
+  ctx.shadowOffsetY = font.size * 0.12;
+  roundRect(ctx, bx, by, bw, bh, bh / 2);
+  ctx.fillStyle = palette.ctaBg;
+  ctx.fill();
+  ctx.restore();
+
+  ctx.fillStyle = palette.ctaText;
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.fillText(text, bx + padX, by + bh / 2);
+}
+
+/* ============================================================
+   PRICE — 價格區塊（特殊排版：原價刪除線 + 特價放大）
+   ============================================================ */
+function drawPriceBlock(ctx, content, layout, palette, typo, base) {
+  if (!content.salePrice && !content.originalPrice) return;
+  const align = layout.price.anchor === 'center' ? 'center' : 'left';
+
+  // 原價（刪除線、小、淡）
+  if (content.originalPrice) {
+    const origFont = makeFont(TYPE_SCALE.subtitle, typo.subFont, base, 600);
+    ctx.font = origFont.fontStr;
+    ctx.fillStyle = palette.priceOriginal;
+    ctx.textBaseline = 'top';
+    ctx.textAlign = align;
+    const text = `NT$ ${Number(content.originalPrice).toLocaleString()}`;
+    const m = ctx.measureText(text);
+    let ox = layout.priceOrig.x;
+    if (align === 'center') ox = layout.priceOrig.x;
+    ctx.fillText(text, ox, layout.priceOrig.y);
+    // 刪除線
+    ctx.strokeStyle = palette.priceOriginal;
+    ctx.lineWidth = Math.max(2, origFont.size * 0.07);
+    ctx.beginPath();
+    const lineY = layout.priceOrig.y + origFont.size * 0.55;
+    if (align === 'center') {
+      ctx.moveTo(ox - m.width / 2, lineY);
+      ctx.lineTo(ox + m.width / 2, lineY);
+    } else {
+      ctx.moveTo(ox, lineY);
+      ctx.lineTo(ox + m.width, lineY);
+    }
+    ctx.stroke();
+  }
+
+  // 特價（hero 字級）
+  if (content.salePrice) {
+    const heroFont = makeFont(TYPE_SCALE.hero, typo.priceFont, base, 900);
+    ctx.font = heroFont.fontStr;
+    ctx.fillStyle = palette.price;
+    ctx.textBaseline = 'top';
+    ctx.textAlign = align;
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.35)';
+    ctx.shadowBlur = heroFont.size * 0.18;
+    ctx.shadowOffsetY = heroFont.size * 0.04;
+    ctx.fillText(`$${Number(content.salePrice).toLocaleString()}`, layout.price.x, layout.price.y);
+    ctx.restore();
+  }
+}
+
+/* ============================================================
+   主繪圖函式 — renderTemplate
+   依據模板和畫布尺寸繪製完整 Banner
+   ============================================================ */
+async function renderTemplate(canvas, w, h, template, content, productImg, logoImg, customBgImg, overrides = {}) {
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, w, h);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+
+  const palette = { ...template.palette, ...(overrides.palette || {}) };
+  const typo = { ...template.typography, ...(overrides.typography || {}) };
+  const base = Math.min(w, h); // typography baseline
+
+  // === 背景層 ===
+  if (customBgImg) {
+    drawImageCover(ctx, customBgImg, 0, 0, w, h);
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.fillRect(0, 0, w, h);
+  } else {
+    drawBaseBackground(ctx, template.bg.base, w, h);
+    (template.bg.orbs || []).forEach(orb => drawOrb(ctx, orb, w, h));
+    drawAccent(ctx, template.bg.accent, w, h);
+    drawNoise(ctx, template.bg.noise || 0, w, h);
+    drawVignette(ctx, template.bg.vignette || 0, w, h);
+  }
+
+  // === 計算版型 ===
+  const layout = computeLayout(template, w, h);
+
+  // === 商品圖 ===
+  if (productImg) drawProductWithEffects(ctx, productImg, layout.product, template);
+
+  // === Logo ===
+  if (logoImg && layout.logo) {
+    const lx = layout.logo.anchor === 'tr' ? layout.logo.x - layout.logo.w
+             : layout.logo.anchor === 'tc' ? layout.logo.x - layout.logo.w / 2
+             : layout.logo.x;
+    drawImageContain(ctx, logoImg, lx, layout.logo.y, layout.logo.w, layout.logo.h);
+  }
+
+  // === 文字層 ===
+  // Tiny / 超窄圖幾乎只放商品 + 標題
+  const tiny = layout.tiny;
+
+  // Badge
+  if (content.badge && !tiny) {
+    drawBadge(ctx, content.badge, layout.badge, palette, base);
+  }
+
+  // Title
+  if (content.title) {
+    const font = makeFont(TYPE_SCALE.title, typo.titleFont, base, 800);
+    drawText(ctx, content.title, {
+      font, color: palette.title,
+      x: layout.title.x, y: layout.title.y,
+      anchor: layout.title.anchor || 'left',
+      maxWidth: layout.title.w, maxLines: 2,
+      glow: palette.titleGlow,
+      shadow: palette.titleGlow ? null : 'rgba(0,0,0,0.4)',
+    });
+  }
+
+  // Subtitle
+  if (content.subtitle && !tiny) {
+    const font = makeFont(TYPE_SCALE.subtitle, typo.subFont, base, 500);
+    drawText(ctx, content.subtitle, {
+      font, color: palette.subtitle,
+      x: layout.subtitle.x, y: layout.subtitle.y,
+      anchor: layout.subtitle.anchor || 'left',
+      maxWidth: layout.subtitle.w, maxLines: 2,
+      shadow: 'rgba(0,0,0,0.3)',
+    });
+  }
+
+  // Price
+  if ((content.salePrice || content.originalPrice) && !tiny) {
+    drawPriceBlock(ctx, content, layout, palette, typo, base);
+  } else if (content.salePrice && tiny) {
+    // tiny 圖只放特價，較小
+    const font = makeFont({ ...TYPE_SCALE.title, size: 0.16 }, typo.priceFont, base, 900);
+    drawText(ctx, `$${Number(content.salePrice).toLocaleString()}`, {
+      font, color: palette.price,
+      x: layout.price.x, y: layout.price.y,
+      anchor: layout.price.anchor || 'left',
+      shadow: 'rgba(0,0,0,0.4)',
+    });
+  }
+
+  // CTA
+  if (content.cta && !tiny && !layout.isUltraThin) {
+    drawCTA(ctx, content.cta, layout.cta, palette, base);
+  }
+
+  // Date
+  if ((content.startDate || content.endDate) && !tiny) {
+    const font = makeFont(TYPE_SCALE.date, typo.subFont, base, 600);
+    let dateStr = '';
+    if (content.startDate && content.endDate) dateStr = `${content.startDate} ～ ${content.endDate}`;
+    else if (content.startDate) dateStr = `${content.startDate} 起`;
+    else dateStr = `～ ${content.endDate}`;
+    drawText(ctx, dateStr, {
+      font, color: palette.date,
+      x: layout.date.x, y: layout.date.y,
+      anchor: layout.date.anchor || 'left',
+      shadow: 'rgba(0,0,0,0.3)',
+    });
+  }
+}
+
+/* ============================================================
+   App
+   ============================================================ */
 function App() {
   const [tab, setTab] = useState('shop');
   const [product, setProduct] = useState({
     name: '無線藍牙耳機 Pro',
+    subtitle: '主動降噪 · 30 小時長效續航',
     salePrice: '1499',
     originalPrice: '2999',
     startDate: '2026-05-10',
     endDate: '2026-05-20',
     platform: '蝦皮',
     image: null,
+    badge: '',
+    cta: '',
     selectedSizes: ['shopee_1200x500', 'momo_852x426'],
   });
   const [marketing, setMarketing] = useState({
@@ -416,84 +1072,94 @@ function App() {
     selectedSizes: ['social_1080x1080', 'igstory_1080x1920', 'share_1200x630'],
   });
   const [design, setDesign] = useState({
-    template: 't1',
+    templateId: 'tech-flash',
     customBg: null,
-    fonts: { title: 'Noto Sans TC', price: 'Anton', date: 'Noto Sans TC', badge: 'Noto Sans TC' },
-    colors: { title: '#ffffff', price: '#fff200', date: '#ffffff', badgeBg: '#ffeb3b', badgeText: '#1a1a1a' },
-    badgeText: '',
-    positions: JSON.parse(JSON.stringify(DEFAULT_POSITIONS)),
+    logo: null,
+    palette: {},      // 使用者覆寫色彩
+    typography: {},   // 使用者覆寫字型
   });
 
   const [productImg, setProductImg] = useState(null);
+  const [logoImg, setLogoImg] = useState(null);
   const [customBgImg, setCustomBgImg] = useState(null);
   const [exporting, setExporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [progressLabel, setProgressLabel] = useState('');
+  const [filterCategory, setFilterCategory] = useState('全部');
   const previewCanvasRef = useRef(null);
 
-  // Load images when data URL changes
   useEffect(() => {
     if (product.image) loadImage(product.image).then(setProductImg).catch(() => setProductImg(null));
     else setProductImg(null);
   }, [product.image]);
 
   useEffect(() => {
+    if (design.logo) loadImage(design.logo).then(setLogoImg).catch(() => setLogoImg(null));
+    else setLogoImg(null);
+  }, [design.logo]);
+
+  useEffect(() => {
     if (design.customBg) loadImage(design.customBg).then(setCustomBgImg).catch(() => setCustomBgImg(null));
     else setCustomBgImg(null);
   }, [design.customBg]);
 
-  // Apply template defaults to design when template changes
+  const template = useMemo(() => TEMPLATES.find(t => t.id === design.templateId) || TEMPLATES[0], [design.templateId]);
+
+  // 根據選中的模板自動填入預設 badge / cta（如果使用者沒填）
   useEffect(() => {
-    const t = TEMPLATES[design.template];
-    if (!t) return;
-    setDesign(d => ({
-      ...d,
-      colors: { ...d.colors, badgeBg: t.badgeBg, badgeText: t.badgeText },
-      badgeText: d.badgeText || t.badge,
+    setProduct(p => ({
+      ...p,
+      badge: p.badge || template.defaults.badge,
+      cta: p.cta || template.defaults.cta,
     }));
-  }, [design.template]);
+  }, [template.id]);
 
-  const config = useMemo(() => ({
-    template: design.template,
-    fonts: design.fonts,
-    colors: design.colors,
-    badgeText: design.badgeText,
-    positions: design.positions,
-    product,
-  }), [design, product]);
+  const content = useMemo(() => ({
+    title: product.name,
+    subtitle: product.subtitle,
+    salePrice: product.salePrice,
+    originalPrice: product.originalPrice,
+    startDate: product.startDate,
+    endDate: product.endDate,
+    badge: product.badge,
+    cta: product.cta,
+  }), [product]);
 
-  // Re-render preview canvas when anything changes
+  // 預覽用 1200x630
   useEffect(() => {
     if (!previewCanvasRef.current) return;
-    const previewW = 1200, previewH = 630;
     document.fonts.ready.then(() => {
-      renderToCanvas(previewCanvasRef.current, previewW, previewH, config, productImg, customBgImg);
+      renderTemplate(previewCanvasRef.current, 1200, 630, template, content, productImg, logoImg, customBgImg, { palette: design.palette, typography: design.typography });
     });
-  }, [config, productImg, customBgImg]);
+  }, [template, content, productImg, logoImg, customBgImg, design.palette, design.typography]);
 
   const handleProductImage = async (e) => {
     const f = e.target.files[0];
     if (!f) return;
-    const url = await fileToDataURL(f);
-    setProduct(p => ({ ...p, image: url }));
+    setProduct(p => ({ ...p, image: await fileToDataURL(f) }));
+  };
+
+  const handleLogoImage = async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    setDesign(d => ({ ...d, logo: await fileToDataURL(f) }));
   };
 
   const handleBgImage = async (e) => {
     const f = e.target.files[0];
     if (!f) return;
-    const url = await fileToDataURL(f);
-    setDesign(d => ({ ...d, customBg: url }));
+    setDesign(d => ({ ...d, customBg: await fileToDataURL(f) }));
   };
 
   const allSizes = useMemo(() => Object.values(SIZES).flat(), []);
   const selectedSizesData = useMemo(() => {
-    const allSelected = [...product.selectedSizes, ...marketing.selectedSizes];
-    return allSizes.filter(s => allSelected.includes(s.key));
+    const all = [...product.selectedSizes, ...marketing.selectedSizes];
+    return allSizes.filter(s => all.includes(s.key));
   }, [allSizes, product.selectedSizes, marketing.selectedSizes]);
 
   const exportAll = async () => {
     if (selectedSizesData.length === 0) {
-      alert('請先在「電商同仁」或「行銷同仁」面板勾選至少一個輸出尺寸');
+      alert('請先在「電商」或「行銷」面板勾選至少一個輸出尺寸');
       return;
     }
     setExporting(true);
@@ -503,28 +1169,27 @@ function App() {
     const productSlug = (product.name || 'banner').replace(/[^\w一-龥-]/g, '_').slice(0, 24);
     for (let i = 0; i < selectedSizesData.length; i++) {
       const s = selectedSizesData[i];
-      setProgressLabel(`正在輸出 ${s.label} (${s.w}x${s.h})…`);
-      await renderToCanvas(offCanvas, s.w, s.h, config, productImg, customBgImg);
+      setProgressLabel(`輸出 ${s.label} (${s.w}×${s.h})…`);
+      await renderTemplate(offCanvas, s.w, s.h, template, content, productImg, logoImg, customBgImg, { palette: design.palette, typography: design.typography });
       const blob = await new Promise(res => offCanvas.toBlob(res, 'image/png'));
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${productSlug}_${s.label}_${s.w}x${s.h}.png`;
+      a.download = `${productSlug}_${template.id}_${s.label}_${s.w}x${s.h}.png`;
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       URL.revokeObjectURL(url);
       setProgress(((i + 1) / selectedSizesData.length) * 100);
       if (i < selectedSizesData.length - 1) await new Promise(r => setTimeout(r, 350));
     }
-    setProgressLabel(`完成！共輸出 ${selectedSizesData.length} 張圖`);
+    setProgressLabel(`完成！共輸出 ${selectedSizesData.length} 張`);
     setTimeout(() => { setExporting(false); setProgress(0); setProgressLabel(''); }, 1500);
   };
 
   return (
     <div className="app">
-      {/* LEFT PANEL: 三角色分頁 */}
       <div className="panel">
-        <h1>🎨 Banner Studio</h1>
-        <div style={{ fontSize: 12, color: '#888', marginBottom: 12 }}>三角色協作 · 一鍵輸出多尺寸促銷圖</div>
+        <h1>🎨 Banner Studio <span style={{ fontSize: 11, color: '#888', fontWeight: 500 }}>v2 · Design System</span></h1>
+        <div style={{ fontSize: 12, color: '#888', marginBottom: 12 }}>10 套商業級模板 · 三角色協作 · 一鍵多尺寸輸出</div>
 
         <div className="tabs">
           <div className={`tab ${tab==='shop'?'active':''}`} onClick={() => setTab('shop')}>🛒 電商</div>
@@ -534,59 +1199,53 @@ function App() {
 
         {tab === 'shop' && <ShopPanel product={product} setProduct={setProduct} onImage={handleProductImage} />}
         {tab === 'market' && <MarketPanel marketing={marketing} setMarketing={setMarketing} />}
-        {tab === 'design' && <DesignPanel design={design} setDesign={setDesign} onBg={handleBgImage} />}
+        {tab === 'design' && <DesignPanel
+          design={design}
+          setDesign={setDesign}
+          template={template}
+          filterCategory={filterCategory}
+          setFilterCategory={setFilterCategory}
+          onBg={handleBgImage}
+          onLogo={handleLogoImage}
+          productImg={productImg}
+        />}
       </div>
 
-      {/* CENTER: 預覽 */}
       <div className="preview-area">
-        <div className="preview-card" style={{ width: '100%', maxWidth: 760 }}>
+        <div className="preview-card">
           <div className="toolbar">
-            <span className="ratio-pill">即時預覽 · 1200×630</span>
-            <span style={{ fontSize: 12, color: '#666' }}>所有變更即時反映 · 拖曳區塊調整位置</span>
+            <span className="ratio-pill">即時預覽 · {template.emoji} {template.name}</span>
+            <span style={{ fontSize: 12, color: '#666' }}>1200×630（標準分享圖）</span>
           </div>
-          <PreviewWithDraggables
-            canvasRef={previewCanvasRef}
-            positions={design.positions}
-            setPositions={(p) => setDesign(d => ({ ...d, positions: p }))}
-          />
+          <div className="preview-canvas-wrap">
+            <canvas ref={previewCanvasRef} />
+          </div>
         </div>
 
-        <div className="preview-card" style={{ width: '100%', maxWidth: 760 }}>
-          <h2 style={{ marginTop: 0 }}>📊 輸出概覽</h2>
-          <div className="stat-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-            <div className="stat">
-              <div className="stat-num">{product.selectedSizes.length}</div>
-              <div className="stat-label">🛒 通路尺寸</div>
-            </div>
-            <div className="stat">
-              <div className="stat-num">{marketing.selectedSizes.length}</div>
-              <div className="stat-label">📐 行銷尺寸</div>
-            </div>
-            <div className="stat">
-              <div className="stat-num" style={{ fontSize: 14 }}>{TEMPLATES[design.template].name}</div>
-              <div className="stat-label">套用模板</div>
-            </div>
+        {selectedSizesData.length > 0 && (
+          <div className="preview-card">
+            <h2 style={{ marginTop: 0 }}>📐 多尺寸預覽</h2>
+            <div style={{ fontSize: 11, color: '#888', marginBottom: 8 }}>所有勾選尺寸的縮圖預覽（依勾選順序）</div>
+            <MultiPreview
+              sizes={selectedSizesData}
+              template={template}
+              content={content}
+              productImg={productImg}
+              logoImg={logoImg}
+              customBgImg={customBgImg}
+              overrides={{ palette: design.palette, typography: design.typography }}
+            />
           </div>
-          {selectedSizesData.length > 0 && (
-            <div style={{ marginTop: 12, fontSize: 12, color: '#555', lineHeight: 1.7 }}>
-              {selectedSizesData.map(s => `${s.label} (${s.w}×${s.h})`).join(' · ')}
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
-      {/* RIGHT PANEL: 輸出與摘要 */}
       <div className="panel">
         <h1>📦 一鍵輸出</h1>
-        <div style={{ fontSize: 12, color: '#888', marginBottom: 16 }}>
-          選擇的尺寸會用 Canvas 繪製成真實 PNG（非截圖），直接下載到本機。
+        <div style={{ fontSize: 12, color: '#888', marginBottom: 12 }}>
+          以模板「{template.emoji} {template.name}」套用於所有勾選尺寸
         </div>
 
-        <button
-          className="btn"
-          onClick={exportAll}
-          disabled={exporting || selectedSizesData.length === 0}
-        >
+        <button className="btn" onClick={exportAll} disabled={exporting || selectedSizesData.length === 0}>
           {exporting ? '輸出中…' : `輸出 ${selectedSizesData.length} 張 PNG`}
         </button>
 
@@ -597,11 +1256,27 @@ function App() {
           </>
         )}
 
+        <h2>📊 輸出概覽</h2>
+        <div className="stat-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+          <div className="stat">
+            <div className="stat-num">{product.selectedSizes.length}</div>
+            <div className="stat-label">🛒 通路</div>
+          </div>
+          <div className="stat">
+            <div className="stat-num">{marketing.selectedSizes.length}</div>
+            <div className="stat-label">📐 行銷</div>
+          </div>
+          <div className="stat">
+            <div className="stat-num" style={{ fontSize: 14 }}>{template.emoji}{template.category}</div>
+            <div className="stat-label">套用模板</div>
+          </div>
+        </div>
+
         <h2>👥 角色職責</h2>
         <div style={{ fontSize: 12, lineHeight: 1.9, color: '#444' }}>
-          <div><span className="role-tag shop">🛒 電商</span>商品資訊、商品圖、🛒通路尺寸</div>
-          <div><span className="role-tag market">📣 行銷</span>貼文文案、Hashtag、📐行銷尺寸</div>
-          <div><span className="role-tag design">🎨 美編</span>底圖、字型、顏色、區塊位置</div>
+          <div><span className="role-tag shop">🛒 電商</span>商品資訊、商品圖、通路尺寸</div>
+          <div><span className="role-tag market">📣 行銷</span>貼文文案、Hashtag、行銷尺寸</div>
+          <div><span className="role-tag design">🎨 美編</span>選擇模板、Logo、自訂顏色字型</div>
         </div>
 
         <h2>📝 行銷文案預覽</h2>
@@ -613,6 +1288,7 @@ function App() {
         <h2>🛒 商品摘要</h2>
         <div style={{ fontSize: 12, lineHeight: 1.9, color: '#444' }}>
           <div><b>{product.name || '（未命名）'}</b></div>
+          <div>{product.subtitle}</div>
           <div>特價 ${product.salePrice || '0'} {product.originalPrice && <span style={{ textDecoration: 'line-through', color: '#888' }}>${product.originalPrice}</span>}</div>
           <div>{product.startDate} ～ {product.endDate}</div>
           <div>平台：{product.platform || '未指定'}</div>
@@ -622,6 +1298,9 @@ function App() {
   );
 }
 
+/* ============================================================
+   Shop Panel
+   ============================================================ */
 function ShopPanel({ product, setProduct, onImage }) {
   const set = (k, v) => setProduct(p => ({ ...p, [k]: v }));
   const toggleSize = (key) => {
@@ -634,31 +1313,29 @@ function ShopPanel({ product, setProduct, onImage }) {
   };
   const selectGroup = (items) => {
     setProduct(p => {
-      const groupKeys = items.map(i => i.key);
-      const allIn = groupKeys.every(k => p.selectedSizes.includes(k));
-      return {
-        ...p,
-        selectedSizes: allIn
-          ? p.selectedSizes.filter(k => !groupKeys.includes(k))
-          : Array.from(new Set([...p.selectedSizes, ...groupKeys])),
-      };
+      const k = items.map(i => i.key);
+      const allIn = k.every(x => p.selectedSizes.includes(x));
+      return { ...p, selectedSizes: allIn ? p.selectedSizes.filter(x => !k.includes(x)) : Array.from(new Set([...p.selectedSizes, ...k])) };
     });
   };
   const selectAll = () => setProduct(p => ({ ...p, selectedSizes: Object.values(SHOP_SIZES).flat().map(s => s.key) }));
   const clearAll = () => setProduct(p => ({ ...p, selectedSizes: [] }));
+
   return (
     <div>
-      <h2>🛒 電商同仁</h2>
-      <label>商品名稱</label>
-      <input type="text" value={product.name} onChange={e => set('name', e.target.value)} placeholder="例：無線藍牙耳機 Pro" />
+      <h2>🛒 商品資訊</h2>
+      <label>商品名稱（主標）</label>
+      <input type="text" value={product.name} onChange={e => set('name', e.target.value)} />
+      <label>副標 / 賣點</label>
+      <input type="text" value={product.subtitle} onChange={e => set('subtitle', e.target.value)} placeholder="例：主動降噪 · 30 小時續航" />
       <div className="row">
         <div>
           <label>特價 (NT$)</label>
-          <input type="number" value={product.salePrice} onChange={e => set('salePrice', e.target.value)} placeholder="1499" />
+          <input type="number" value={product.salePrice} onChange={e => set('salePrice', e.target.value)} />
         </div>
         <div>
           <label>原價 (NT$)</label>
-          <input type="number" value={product.originalPrice} onChange={e => set('originalPrice', e.target.value)} placeholder="2999" />
+          <input type="number" value={product.originalPrice} onChange={e => set('originalPrice', e.target.value)} />
         </div>
       </div>
       <div className="row">
@@ -673,22 +1350,19 @@ function ShopPanel({ product, setProduct, onImage }) {
       </div>
       <label>銷售平台</label>
       <select value={product.platform} onChange={e => set('platform', e.target.value)}>
-        <option>蝦皮</option>
-        <option>momo</option>
-        <option>PChome</option>
-        <option>Yahoo購物</option>
-        <option>官方網站</option>
-        <option>露天</option>
-        <option>樂天</option>
+        <option>蝦皮</option><option>momo</option><option>PChome</option><option>Yahoo購物</option>
+        <option>官方網站</option><option>露天</option><option>樂天</option><option>博客來</option>
       </select>
+      <label>標語 Badge（選填，預設用模板的）</label>
+      <input type="text" value={product.badge} onChange={e => set('badge', e.target.value)} placeholder="留空使用模板預設" />
+      <label>CTA 按鈕（選填，預設用模板的）</label>
+      <input type="text" value={product.cta} onChange={e => set('cta', e.target.value)} placeholder="例：立即搶購 →" />
       <label>商品圖片</label>
       <input type="file" accept="image/*" onChange={onImage} />
       {product.image && <img src={product.image} alt="" style={{ width: '100%', marginTop: 8, borderRadius: 8 }} />}
 
       <h2>🛒 通路尺寸</h2>
-      <div style={{ fontSize: 11, color: '#888', marginBottom: 8, lineHeight: 1.6 }}>
-        各電商平台規定的圖片尺寸。請依據此檔商品要上架的通路勾選。
-      </div>
+      <div style={{ fontSize: 11, color: '#888', marginBottom: 8 }}>各電商平台規定的精確尺寸</div>
       <div style={{ display: 'flex', gap: 6, marginBottom: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <button className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: 12, width: 'auto' }} onClick={selectAll}>全選</button>
         <button className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: 12, width: 'auto' }} onClick={clearAll}>清空</button>
@@ -698,22 +1372,15 @@ function ShopPanel({ product, setProduct, onImage }) {
         const allIn = items.every(i => product.selectedSizes.includes(i.key));
         return (
           <div key={group} className="size-group">
-            <div className="size-group-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="size-group-title" style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span>{group}</span>
-              <span
-                onClick={() => selectGroup(items)}
-                style={{ fontSize: 10, color: '#4f46e5', cursor: 'pointer', fontWeight: 600 }}
-              >
+              <span onClick={() => selectGroup(items)} style={{ fontSize: 10, color: '#4f46e5', cursor: 'pointer', fontWeight: 600 }}>
                 {allIn ? '取消整組' : '勾選整組'}
               </span>
             </div>
             {items.map(s => (
               <label key={s.key} className="size-checkbox">
-                <input
-                  type="checkbox"
-                  checked={product.selectedSizes.includes(s.key)}
-                  onChange={() => toggleSize(s.key)}
-                />
+                <input type="checkbox" checked={product.selectedSizes.includes(s.key)} onChange={() => toggleSize(s.key)} />
                 {s.label} <span style={{ color: '#888' }}>· {s.w}×{s.h}</span>
               </label>
             ))}
@@ -724,41 +1391,36 @@ function ShopPanel({ product, setProduct, onImage }) {
   );
 }
 
+/* ============================================================
+   Market Panel
+   ============================================================ */
 function MarketPanel({ marketing, setMarketing }) {
   const toggleSize = (key) => {
     setMarketing(m => ({
       ...m,
-      selectedSizes: m.selectedSizes.includes(key)
-        ? m.selectedSizes.filter(k => k !== key)
-        : [...m.selectedSizes, key],
+      selectedSizes: m.selectedSizes.includes(key) ? m.selectedSizes.filter(k => k !== key) : [...m.selectedSizes, key],
     }));
   };
   const selectGroup = (items) => {
     setMarketing(m => {
-      const groupKeys = items.map(i => i.key);
-      const allIn = groupKeys.every(k => m.selectedSizes.includes(k));
-      return {
-        ...m,
-        selectedSizes: allIn
-          ? m.selectedSizes.filter(k => !groupKeys.includes(k))
-          : Array.from(new Set([...m.selectedSizes, ...groupKeys])),
-      };
+      const k = items.map(i => i.key);
+      const allIn = k.every(x => m.selectedSizes.includes(x));
+      return { ...m, selectedSizes: allIn ? m.selectedSizes.filter(x => !k.includes(x)) : Array.from(new Set([...m.selectedSizes, ...k])) };
     });
   };
   const selectAll = () => setMarketing(m => ({ ...m, selectedSizes: Object.values(MARKET_SIZES).flat().map(s => s.key) }));
   const clearAll = () => setMarketing(m => ({ ...m, selectedSizes: [] }));
+
   return (
     <div>
-      <h2>📣 行銷同仁</h2>
+      <h2>📣 文案與 Hashtag</h2>
       <label>貼文文案</label>
       <textarea value={marketing.caption} onChange={e => setMarketing(m => ({ ...m, caption: e.target.value }))} rows={5} />
       <label>Hashtag</label>
       <textarea value={marketing.hashtags} onChange={e => setMarketing(m => ({ ...m, hashtags: e.target.value }))} rows={3} />
 
       <h2>📐 行銷尺寸</h2>
-      <div style={{ fontSize: 11, color: '#888', marginBottom: 8, lineHeight: 1.6 }}>
-        社群、影片、活動主視覺等通用尺寸，可彈性使用於多個行銷渠道。
-      </div>
+      <div style={{ fontSize: 11, color: '#888', marginBottom: 8 }}>社群、影片、活動主視覺等通用尺寸</div>
       <div style={{ display: 'flex', gap: 6, marginBottom: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <button className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: 12, width: 'auto' }} onClick={selectAll}>全選</button>
         <button className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: 12, width: 'auto' }} onClick={clearAll}>清空</button>
@@ -768,22 +1430,15 @@ function MarketPanel({ marketing, setMarketing }) {
         const allIn = items.every(i => marketing.selectedSizes.includes(i.key));
         return (
           <div key={group} className="size-group">
-            <div className="size-group-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="size-group-title" style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span>{group}</span>
-              <span
-                onClick={() => selectGroup(items)}
-                style={{ fontSize: 10, color: '#4f46e5', cursor: 'pointer', fontWeight: 600 }}
-              >
+              <span onClick={() => selectGroup(items)} style={{ fontSize: 10, color: '#4f46e5', cursor: 'pointer', fontWeight: 600 }}>
                 {allIn ? '取消整組' : '勾選整組'}
               </span>
             </div>
             {items.map(s => (
               <label key={s.key} className="size-checkbox">
-                <input
-                  type="checkbox"
-                  checked={marketing.selectedSizes.includes(s.key)}
-                  onChange={() => toggleSize(s.key)}
-                />
+                <input type="checkbox" checked={marketing.selectedSizes.includes(s.key)} onChange={() => toggleSize(s.key)} />
                 {s.label} <span style={{ color: '#888' }}>· {s.w}×{s.h}</span>
               </label>
             ))}
@@ -794,140 +1449,150 @@ function MarketPanel({ marketing, setMarketing }) {
   );
 }
 
-function DesignPanel({ design, setDesign, onBg }) {
-  const set = (k, v) => setDesign(d => ({ ...d, [k]: v }));
-  const setColor = (k, v) => setDesign(d => ({ ...d, colors: { ...d.colors, [k]: v } }));
-  const setFont = (k, v) => setDesign(d => ({ ...d, fonts: { ...d.fonts, [k]: v } }));
-  const resetPos = () => setDesign(d => ({ ...d, positions: JSON.parse(JSON.stringify(DEFAULT_POSITIONS)) }));
+/* ============================================================
+   Design Panel — 模板選擇 + 顏色字型覆寫
+   ============================================================ */
+function DesignPanel({ design, setDesign, template, filterCategory, setFilterCategory, onBg, onLogo, productImg }) {
+  const filtered = useMemo(() =>
+    filterCategory === '全部' ? TEMPLATES : TEMPLATES.filter(t => t.category === filterCategory),
+    [filterCategory]
+  );
+
+  const setColor = (k, v) => setDesign(d => ({ ...d, palette: { ...d.palette, [k]: v } }));
+  const resetColors = () => setDesign(d => ({ ...d, palette: {} }));
+
+  // 取得實際使用的顏色（覆寫優先）
+  const palette = { ...template.palette, ...design.palette };
 
   return (
     <div>
-      <h2>🎨 美編同仁</h2>
+      <h2>🎨 商業級模板</h2>
+      <div style={{ fontSize: 11, color: '#888', marginBottom: 8 }}>
+        每套模板都是固定版型骨架（Master Template），元件不可超出安全區
+      </div>
 
-      <label>套版模板（漸層）</label>
-      <div className="template-grid">
-        {Object.entries(TEMPLATES).map(([k, t]) => (
-          <div
-            key={k}
-            className={`template-card ${design.template === k ? 'active' : ''}`}
-            style={{ background: `linear-gradient(${t.angle}deg, ${t.from}, ${t.to})` }}
-            onClick={() => set('template', k)}
-          >
-            {t.name}
-          </div>
+      <div className="category-filter">
+        {CATEGORIES.map(c => (
+          <span key={c} className={`category-pill ${filterCategory === c ? 'active' : ''}`} onClick={() => setFilterCategory(c)}>{c}</span>
         ))}
       </div>
 
-      <label>自訂底圖（覆蓋模板）</label>
+      <div className="template-gallery">
+        {filtered.map(t => (
+          <TemplateThumb
+            key={t.id}
+            template={t}
+            active={t.id === design.templateId}
+            onClick={() => setDesign(d => ({ ...d, templateId: t.id, palette: {} }))}
+            productImg={productImg}
+          />
+        ))}
+      </div>
+
+      <h2>🖼 自訂底圖（覆蓋模板）</h2>
       <input type="file" accept="image/*" onChange={onBg} />
       {design.customBg && (
-        <div style={{ marginTop: 6 }}>
-          <button className="btn btn-secondary" style={{ padding: 6, fontSize: 12 }} onClick={() => set('customBg', null)}>
-            清除自訂底圖
-          </button>
-        </div>
+        <button className="btn btn-secondary" style={{ padding: 6, fontSize: 12, marginTop: 6 }} onClick={() => setDesign(d => ({ ...d, customBg: null }))}>
+          清除自訂底圖
+        </button>
       )}
 
-      <label>標語文字（Badge）</label>
-      <input type="text" value={design.badgeText} onChange={e => set('badgeText', e.target.value)} placeholder="⚡ 限時搶購" />
+      <h2>🔖 品牌 Logo</h2>
+      <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>建議透明 PNG，會自動依模板放置在固定位置</div>
+      <input type="file" accept="image/*" onChange={onLogo} />
+      {design.logo && (
+        <>
+          <img src={design.logo} alt="" style={{ width: '100%', marginTop: 8, borderRadius: 8, background: '#f0f2f5', padding: 8 }} />
+          <button className="btn btn-secondary" style={{ padding: 6, fontSize: 12, marginTop: 4 }} onClick={() => setDesign(d => ({ ...d, logo: null }))}>移除 Logo</button>
+        </>
+      )}
 
-      <h2>🎨 顏色設定</h2>
+      <h2>🎨 顏色微調</h2>
+      <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>覆寫模板預設色彩（不影響版型結構）</div>
       <div className="row">
-        <div><label>標題</label><input type="color" value={design.colors.title} onChange={e => setColor('title', e.target.value)} /></div>
-        <div><label>價格</label><input type="color" value={design.colors.price} onChange={e => setColor('price', e.target.value)} /></div>
+        <div><label>標題色</label><input type="color" value={palette.title.startsWith('#') ? palette.title : '#ffffff'} onChange={e => setColor('title', e.target.value)} /></div>
+        <div><label>價格色</label><input type="color" value={palette.price.startsWith('#') ? palette.price : '#ffffff'} onChange={e => setColor('price', e.target.value)} /></div>
       </div>
       <div className="row">
-        <div><label>日期</label><input type="color" value={design.colors.date} onChange={e => setColor('date', e.target.value)} /></div>
-        <div><label>標語底色</label><input type="color" value={design.colors.badgeBg} onChange={e => setColor('badgeBg', e.target.value)} /></div>
+        <div><label>Badge 底</label><input type="color" value={palette.badgeBg.startsWith('#') ? palette.badgeBg : '#ffffff'} onChange={e => setColor('badgeBg', e.target.value)} /></div>
+        <div><label>Badge 字</label><input type="color" value={palette.badgeText.startsWith('#') ? palette.badgeText : '#000000'} onChange={e => setColor('badgeText', e.target.value)} /></div>
       </div>
-      <label>標語字色</label>
-      <input type="color" value={design.colors.badgeText} onChange={e => setColor('badgeText', e.target.value)} />
-
-      <h2>🔤 字型</h2>
       <div className="row">
-        <div>
-          <label>標題</label>
-          <select value={design.fonts.title} onChange={e => setFont('title', e.target.value)}>
-            {FONTS.map(f => <option key={f}>{f}</option>)}
-          </select>
-        </div>
-        <div>
-          <label>價格</label>
-          <select value={design.fonts.price} onChange={e => setFont('price', e.target.value)}>
-            {FONTS.map(f => <option key={f}>{f}</option>)}
-          </select>
-        </div>
+        <div><label>CTA 底</label><input type="color" value={palette.ctaBg.startsWith('#') ? palette.ctaBg : '#ffffff'} onChange={e => setColor('ctaBg', e.target.value)} /></div>
+        <div><label>CTA 字</label><input type="color" value={palette.ctaText.startsWith('#') ? palette.ctaText : '#000000'} onChange={e => setColor('ctaText', e.target.value)} /></div>
       </div>
+      <button className="btn btn-secondary" style={{ marginTop: 8 }} onClick={resetColors}>↺ 還原模板色彩</button>
 
-      <h2>📍 區塊位置</h2>
-      <div className="help-text">在中間預覽圖上直接拖曳；或按下方重置回預設</div>
-      <button className="btn btn-secondary" style={{ marginTop: 8 }} onClick={resetPos}>↺ 重置位置</button>
+      <h2>📋 設計規範（Design Tokens）</h2>
+      <div style={{ background: '#f8f9fb', padding: 10, borderRadius: 8, fontSize: 11, fontFamily: 'monospace', lineHeight: 1.7, color: '#444' }}>
+        <div>Layout：<b>{template.layout}</b></div>
+        <div>Safe Zone：x={Math.round(TOKENS.safeZone.x*100)}% / y={Math.round(TOKENS.safeZone.y*100)}%</div>
+        <div>Hero Price：{Math.round(TYPE_SCALE.hero.size*100)}% · weight {TYPE_SCALE.hero.weight}</div>
+        <div>Title：{Math.round(TYPE_SCALE.title.size*100)}% · weight {TYPE_SCALE.title.weight}</div>
+        <div>Subtitle：{Math.round(TYPE_SCALE.subtitle.size*100)}% · weight {TYPE_SCALE.subtitle.weight}</div>
+        <div>CTA：{Math.round(TYPE_SCALE.cta.size*100)}% · weight {TYPE_SCALE.cta.weight}</div>
+        <div>背景層：base + {(template.bg.orbs||[]).length} orbs + noise + vignette</div>
+      </div>
     </div>
   );
 }
 
-function PreviewWithDraggables({ canvasRef, positions, setPositions }) {
-  const wrapRef = useRef(null);
-  const [dragging, setDragging] = useState(null);
-
-  const onMouseDown = (key) => (e) => {
-    e.preventDefault();
-    setDragging(key);
-  };
-
+/* ============================================================
+   Template Thumbnail
+   ============================================================ */
+function TemplateThumb({ template, active, onClick, productImg }) {
+  const ref = useRef(null);
   useEffect(() => {
-    if (!dragging) return;
-    const onMove = (e) => {
-      const rect = wrapRef.current.getBoundingClientRect();
-      const cx = (e.clientX - rect.left) / rect.width * 100;
-      const cy = (e.clientY - rect.top) / rect.height * 100;
-      setPositions({
-        ...positions,
-        [dragging]: {
-          x: Math.max(0, Math.min(95, cx)),
-          y: Math.max(0, Math.min(95, cy)),
-        },
-      });
-    };
-    const onUp = () => setDragging(null);
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-    return () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-    };
-  }, [dragging, positions, setPositions]);
-
-  const labels = {
-    badge: 'Badge',
-    title: '標題',
-    price: '價格',
-    date: '日期',
-    product: '商品圖',
-  };
+    if (!ref.current) return;
+    document.fonts.ready.then(() => {
+      renderTemplate(ref.current, 320, 180, template, {
+        title: '商品名稱',
+        subtitle: '副標賣點',
+        salePrice: '999',
+        originalPrice: '1999',
+        badge: template.defaults.badge,
+        cta: template.defaults.cta,
+      }, productImg, null, null);
+    });
+  }, [template, productImg]);
 
   return (
-    <div className="preview-canvas-wrap" ref={wrapRef}>
-      <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
-      {Object.entries(positions).map(([key, p]) => (
-        <div
-          key={key}
-          className={`draggable ${dragging === key ? 'dragging' : ''}`}
-          style={{
-            left: `${p.x}%`,
-            top: `${p.y}%`,
-            color: '#fff',
-            fontSize: 11,
-            fontWeight: 700,
-            textShadow: '0 1px 2px rgba(0,0,0,0.5)',
-            background: dragging === key ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.25)',
-            borderRadius: 4,
-          }}
-          onMouseDown={onMouseDown(key)}
-        >
-          {labels[key]}
-        </div>
+    <div className={`template-thumb ${active ? 'active' : ''}`} onClick={onClick}>
+      <canvas ref={ref} />
+      <div className="template-name">{template.emoji} {template.name}</div>
+    </div>
+  );
+}
+
+/* ============================================================
+   Multi-Size Preview
+   ============================================================ */
+function MultiPreview({ sizes, template, content, productImg, logoImg, customBgImg, overrides }) {
+  return (
+    <div className="multi-preview">
+      {sizes.map(s => (
+        <PreviewItem key={s.key} size={s} template={template} content={content} productImg={productImg} logoImg={logoImg} customBgImg={customBgImg} overrides={overrides} />
       ))}
+    </div>
+  );
+}
+
+function PreviewItem({ size, template, content, productImg, logoImg, customBgImg, overrides }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    document.fonts.ready.then(() => {
+      // 縮圖最大 360px 寬
+      const scale = Math.min(360 / size.w, 240 / size.h, 1);
+      const tw = Math.round(size.w * scale);
+      const th = Math.round(size.h * scale);
+      renderTemplate(ref.current, tw, th, template, content, productImg, logoImg, customBgImg, overrides);
+    });
+  }, [size, template, content, productImg, logoImg, customBgImg, overrides]);
+  return (
+    <div className="multi-preview-item">
+      <canvas ref={ref} />
+      <div className="multi-preview-label">{size.label}</div>
     </div>
   );
 }
