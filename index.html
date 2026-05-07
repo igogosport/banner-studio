@@ -654,8 +654,23 @@ const loadImage = (src) => new Promise((resolve, reject) => {
    AI BACKGROUND GENERATION
    支援兩個 provider：
    - 'pollinations'：免費，Flux 模型，無需設定
-   - 'openai'：DALL-E 3，需自備 OpenAI key + Cloudflare Worker proxy
+   - 'openai'：DALL-E 3，預設使用內建 Worker
    ============================================================ */
+// 內建 Cloudflare Worker URL（同仁不用自己輸入）
+// 若要更換，改這行即可，或在進階設定覆寫
+const DEFAULT_WORKER_URL = 'https://banner-ai.dougla999.workers.dev';
+
+// USD → TWD 匯率（估算，可調整）
+const USD_TO_TWD = 32;
+
+// 各 provider 每張費用（依 1792×1024 banner 標準尺寸計算）
+function estimateCostPerImage(provider, quality = 'standard') {
+  if (provider === 'pollinations') return { usd: 0, twd: 0, label: '免費' };
+  // DALL-E 3 1792×1024
+  const usd = quality === 'hd' ? 0.12 : 0.08;
+  const twd = Math.round(usd * USD_TO_TWD * 10) / 10; // 保留一位小數
+  return { usd, twd, label: `約 NT$ ${twd} / 張` };
+}
 async function generateAIBackground(template, productType, w = 1280, h = 720, opts = {}) {
   const { provider = 'pollinations', workerUrl, quality = 'standard', style = 'vivid' } = opts;
   const productHint = productType ? `, designed for ${productType} promotion` : '';
@@ -1718,8 +1733,9 @@ function DesignPanel({ design, setDesign, template, filterCategory, setFilterCat
   const [aiError, setAiError] = useState('');
   const [aiPromptOverride, setAiPromptOverride] = useState('');
   const [showAdvancedAI, setShowAdvancedAI] = useState(false);
-  const [aiProvider, setAiProvider] = useState(() => localStorage.getItem('bs_ai_provider') || 'pollinations');
-  const [workerUrl, setWorkerUrl] = useState(() => localStorage.getItem('bs_worker_url') || '');
+  const [aiProvider, setAiProvider] = useState(() => localStorage.getItem('bs_ai_provider') || 'openai');
+  const [workerUrl, setWorkerUrl] = useState(() => localStorage.getItem('bs_worker_url') || DEFAULT_WORKER_URL);
+  const [showWorkerOverride, setShowWorkerOverride] = useState(false);
   const [aiQuality, setAiQuality] = useState(() => localStorage.getItem('bs_ai_quality') || 'standard');
   const [aiStyle, setAiStyle] = useState(() => localStorage.getItem('bs_ai_style') || 'vivid');
 
@@ -1886,43 +1902,45 @@ function DesignPanel({ design, setDesign, template, filterCategory, setFilterCat
         </div>
       </div>
 
-      {/* DALL-E 3 設定 */}
-      {aiProvider === 'openai' && (
-        <div style={{ background: '#fef3c7', padding: 10, borderRadius: 8, marginBottom: 10, border: '1px solid #fcd34d' }}>
-          <label style={{ marginTop: 0 }}>Cloudflare Worker 網址</label>
-          <input
-            type="text"
-            value={workerUrl}
-            onChange={e => setWorkerUrl(e.target.value)}
-            placeholder="https://banner-ai.your-name.workers.dev"
-            style={{ fontSize: 11, fontFamily: 'monospace' }}
-          />
-          <div style={{ fontSize: 10, color: '#92400e', marginTop: 4, lineHeight: 1.6 }}>
-            尚未設定？看右側 "📖 OpenAI 設定教學" 區塊（或 GitHub repo 的 worker.js）
-          </div>
-          <div className="row" style={{ marginTop: 6 }}>
+      {/* 費用提示 */}
+      {(() => {
+        const cost = estimateCostPerImage(aiProvider, aiQuality);
+        const isFree = cost.usd === 0;
+        return (
+          <div style={{
+            background: isFree ? '#dcfce7' : '#fef3c7',
+            border: `1px solid ${isFree ? '#86efac' : '#fcd34d'}`,
+            padding: '10px 12px', borderRadius: 8, marginBottom: 10,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
             <div>
-              <label style={{ fontSize: 10 }}>畫質</label>
-              <select value={aiQuality} onChange={e => setAiQuality(e.target.value)} style={{ fontSize: 11 }}>
-                <option value="standard">Standard ($0.04-0.08)</option>
-                <option value="hd">HD ($0.08-0.12)</option>
-              </select>
+              <div style={{ fontSize: 11, fontWeight: 700, color: isFree ? '#15803d' : '#92400e' }}>
+                💰 每張費用：{cost.label}
+              </div>
+              <div style={{ fontSize: 10, color: isFree ? '#166534' : '#78350f', marginTop: 2 }}>
+                {isFree
+                  ? 'Pollinations 免費版，品質約 7/10'
+                  : `DALL-E 3 ${aiQuality === 'hd' ? 'HD' : 'Standard'}，品質 ${aiQuality === 'hd' ? '10/10' : '9/10'}`}
+              </div>
             </div>
-            <div>
-              <label style={{ fontSize: 10 }}>風格</label>
-              <select value={aiStyle} onChange={e => setAiStyle(e.target.value)} style={{ fontSize: 11 }}>
-                <option value="vivid">Vivid（鮮豔戲劇）</option>
-                <option value="natural">Natural（自然真實）</option>
+            {!isFree && (
+              <select
+                value={aiQuality}
+                onChange={e => setAiQuality(e.target.value)}
+                style={{ fontSize: 11, width: 'auto', padding: '4px 6px' }}
+              >
+                <option value="standard">Standard</option>
+                <option value="hd">HD</option>
               </select>
-            </div>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       <div style={{ fontSize: 11, color: '#888', marginBottom: 6, lineHeight: 1.6 }}>
         {aiProvider === 'pollinations'
-          ? '使用 Pollinations.ai (Flux 模型 · 免費 · 商用 OK)。文字/商品/Logo 由系統疊加，AI 只負責背景。'
-          : '使用 OpenAI DALL-E 3，品質最高但需自備 OpenAI key + Cloudflare Worker。'}
+          ? '使用 Pollinations.ai (Flux 模型 · 免費 · 商用 OK)。文字/商品/Logo 由系統疊加。'
+          : '使用 OpenAI DALL-E 3 商業級畫質。文字/商品/Logo 由系統疊加。'}
       </div>
       <label>商品類型（讓 AI 更精準）</label>
       <input
@@ -1976,28 +1994,35 @@ function DesignPanel({ design, setDesign, template, filterCategory, setFilterCat
       )}
 
       {aiProvider === 'openai' && (
-        <details style={{ marginTop: 10, fontSize: 11, background: '#f0f9ff', padding: 10, borderRadius: 8, border: '1px solid #bae6fd' }}>
-          <summary style={{ cursor: 'pointer', fontWeight: 700, color: '#075985' }}>📖 OpenAI 設定教學（點開看完整步驟）</summary>
-          <div style={{ marginTop: 8, lineHeight: 1.8, color: '#0c4a6e' }}>
-            <p><b>1. 取得 OpenAI API Key</b></p>
-            <ul style={{ paddingLeft: 18 }}>
-              <li>到 <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener" style={{ color: '#0369a1' }}>platform.openai.com/api-keys</a></li>
-              <li>必須先儲值（Settings → Billing 加入信用卡，至少 $5 USD）</li>
-              <li>按 "Create new secret key"，複製 sk- 開頭的 key</li>
-            </ul>
-            <p style={{ marginTop: 6 }}><b>2. 部署 Cloudflare Worker</b></p>
-            <ul style={{ paddingLeft: 18 }}>
-              <li>到 <a href="https://dash.cloudflare.com/" target="_blank" rel="noopener" style={{ color: '#0369a1' }}>dash.cloudflare.com</a> 註冊免費帳號</li>
-              <li>左側選 Workers & Pages → Create → Worker → Deploy</li>
-              <li>點該 Worker → Edit Code，貼上 <a href="https://github.com/igogosport/banner-studio/blob/main/worker.js" target="_blank" rel="noopener" style={{ color: '#0369a1' }}>worker.js</a> 全部內容 → Save & Deploy</li>
-              <li>Settings → Variables → Add → Name <code>OPENAI_KEY</code>、Value 貼你的 sk- key、勾 Encrypt → Save</li>
-              <li>複製 Worker URL（類似 https://xxx.workers.dev）貼到上方欄位</li>
-            </ul>
-            <p style={{ marginTop: 6 }}><b>3. 費用</b></p>
-            <ul style={{ paddingLeft: 18 }}>
-              <li>Cloudflare Worker：免費（每天 10 萬次請求）</li>
-              <li>OpenAI DALL-E 3：每張 NT$ 1.3～4 元</li>
-            </ul>
+        <details style={{ marginTop: 10, fontSize: 11, background: '#f8fafc', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+          <summary style={{ cursor: 'pointer', fontWeight: 700, color: '#475569' }}>⚙️ 進階設定（管理員用）</summary>
+          <div style={{ marginTop: 8 }}>
+            <label style={{ fontSize: 10, marginTop: 0 }}>Cloudflare Worker URL（預設已內建）</label>
+            <input
+              type="text"
+              value={workerUrl}
+              onChange={e => setWorkerUrl(e.target.value)}
+              placeholder={DEFAULT_WORKER_URL}
+              style={{ fontSize: 10, fontFamily: 'monospace' }}
+            />
+            <button
+              className="btn btn-secondary"
+              style={{ padding: 4, fontSize: 10, marginTop: 4 }}
+              onClick={() => setWorkerUrl(DEFAULT_WORKER_URL)}
+            >
+              ↺ 還原預設 Worker
+            </button>
+
+            <label style={{ fontSize: 10, marginTop: 8 }}>圖像風格</label>
+            <select value={aiStyle} onChange={e => setAiStyle(e.target.value)} style={{ fontSize: 11 }}>
+              <option value="vivid">Vivid（鮮豔戲劇感）</option>
+              <option value="natural">Natural（自然真實）</option>
+            </select>
+
+            <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 8, lineHeight: 1.6 }}>
+              費用估算：1 USD ≈ NT$ {USD_TO_TWD}<br />
+              欲更換 Worker 或 OpenAI 帳號，請聯絡管理員。
+            </div>
           </div>
         </details>
       )}
